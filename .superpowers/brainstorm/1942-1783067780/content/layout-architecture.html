@@ -1,0 +1,127 @@
+<h2>核心布局架构 — 晨曦玻璃</h2>
+<p class="subtitle">这是所有页面的统一骨架：粘性侧边栏 + 顶栏 + 玻璃内容区。在此确认布局结构。</p>
+
+<div class="mockup">
+  <div class="mockup-header">全局面板布局 · 1920×1080</div>
+  <div class="mockup-body">
+    <div style="display: flex; min-height: 400px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 40%, #f1f5f9 100%); border-radius: 12px; overflow: hidden; position: relative;">
+
+      <!-- Parallax background layer -->
+      <div style="position: absolute; inset: 0; pointer-events: none; opacity: 0.3;">
+        <div style="position: absolute; top: 10%; left: 5%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: 20%; right: 10%; width: 250px; height: 250px; background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%); border-radius: 50%;"></div>
+      </div>
+
+      <!-- Sticky Sidebar (collapsed state) -->
+      <div style="width: 56px; min-width: 56px; background: rgba(255,255,255,0.55); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-right: 1px solid rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 6px; position: relative; z-index: 10;">
+        <!-- Logo -->
+        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700;">C</div>
+        <!-- Nav icons -->
+        <div style="width: 36px; height: 36px; background: rgba(59,130,246,0.12); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 11px;">📊</div>
+        <div style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px;">👥</div>
+        <div style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px;">📋</div>
+        <div style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px;">💰</div>
+        <div style="flex:1;"></div>
+        <div style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px;">⚙️</div>
+      </div>
+
+      <!-- Main area -->
+      <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <!-- Sticky Top Bar -->
+        <div style="height: 48px; min-height: 48px; background: rgba(255,255,255,0.5); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; padding: 0 20px; gap: 16px; position: relative; z-index: 9;">
+          <div style="font-size: 12px; color: #94a3b8;">首页 / <span style="color:#3b82f6;font-weight:600;">仪表盘</span></div>
+          <div style="flex:1;"></div>
+          <!-- Search -->
+          <div style="background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; padding: 4px 10px; width: 180px; font-size: 11px; color: #94a3b8;">🔍 搜索...</div>
+          <!-- Avatar -->
+          <div style="width: 30px; height: 30px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 50%;"></div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div style="flex: 1; padding: 20px; overflow-y: auto; position: relative; z-index: 5;">
+          <!-- Stats Cards Row -->
+          <div style="display: flex; gap: 14px; margin-bottom: 18px;">
+            <div style="flex:1; background: rgba(255,255,255,0.65); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.85); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">客户总数</div>
+              <div style="font-size: 26px; font-weight: 700; color: #1e293b; margin-top: 4px;">1,284</div>
+              <div style="font-size: 10px; color: #10b981; margin-top: 2px;">↑ 12% 本月新增</div>
+            </div>
+            <div style="flex:1; background: rgba(255,255,255,0.65); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.85); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">潜在金额</div>
+              <div style="font-size: 26px; font-weight: 700; color: #1e293b; margin-top: 4px;">¥8.6M</div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">32 个项目</div>
+            </div>
+            <div style="flex:1; background: rgba(255,255,255,0.65); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.85); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">成交金额</div>
+              <div style="font-size: 26px; font-weight: 700; color: #1e293b; margin-top: 4px;">¥3.2M</div>
+              <div style="font-size: 10px; color: #10b981; margin-top: 2px;">15 个合同</div>
+            </div>
+          </div>
+
+          <!-- Two column layout -->
+          <div style="display: flex; gap: 14px;">
+            <!-- Task list (60%) -->
+            <div style="flex: 3; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+              <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">待办提醒</div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 8px; border: 1px solid rgba(0,0,0,0.04);">
+                  <div style="width: 16px; height: 16px; border: 1.5px solid #cbd5e1; border-radius: 4px;"></div>
+                  <div style="flex:1; font-size: 11px; color: #334155;">跟进华科信息 — 下一步沟通方案提交</div>
+                  <div style="font-size: 9px; color: #ef4444; background: rgba(239,68,68,0.08); padding: 2px 8px; border-radius: 4px;">今日</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 8px; border: 1px solid rgba(0,0,0,0.04);">
+                  <div style="width: 16px; height: 16px; border: 1.5px solid #cbd5e1; border-radius: 4px;"></div>
+                  <div style="flex:1; font-size: 11px; color: #334155;">鼎新科技合同审批 — 待管理员审核</div>
+                  <div style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.08); padding: 2px 8px; border-radius: 4px;">明天</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 8px; border: 1px solid rgba(0,0,0,0.04);">
+                  <div style="width: 16px; height: 16px; border: 1.5px solid #cbd5e1; border-radius: 4px;"></div>
+                  <div style="flex:1; font-size: 11px; color: #334155;">完成月度销售报告 — 协同办公任务</div>
+                  <div style="font-size: 9px; color: #64748b; background: rgba(100,116,139,0.08); padding: 2px 8px; border-radius: 4px;">本周</div>
+                </div>
+              </div>
+            </div>
+            <!-- Quick actions (40%) -->
+            <div style="flex: 2; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+              <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">快捷操作</div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="padding: 10px 12px; background: rgba(59,130,246,0.06); border-radius: 8px; font-size: 11px; color: #3b82f6; cursor: pointer;">＋ 新增客户</div>
+                <div style="padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 8px; font-size: 11px; color: #475569;">＋ 添加跟进记录</div>
+                <div style="padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 8px; font-size: 11px; color: #475569;">＋ 创建合同</div>
+                <div style="padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 8px; font-size: 11px; color: #475569;">＋ 发起报销</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Infinite Marquee at bottom -->
+          <div style="margin-top: 16px; background: rgba(255,255,255,0.4); backdrop-filter: blur(6px); border-radius: 8px; border: 1px solid rgba(255,255,255,0.6); padding: 8px 0; overflow: hidden; white-space: nowrap; font-size: 10px; color: #94a3b8;">
+            <span style="display: inline-block; animation: scroll-left 20s linear infinite;">🏢 华科信息 · 鼎新科技 · 远航集团 · 明辉电子 · 中科云智 · 博创科技 · 恒达通信 · 瑞联数据 · 天宇智能 · 创鑫软件 ·</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast (positioned absolute, top-right) -->
+      <div style="position: absolute; top: 60px; right: 16px; background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); border: 1px solid rgba(16,185,129,0.3); border-radius: 10px; padding: 10px 16px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #065f46; box-shadow: 0 4px 20px rgba(0,0,0,0.08); z-index: 20;">
+        <span>✅</span> 操作成功 — 客户信息已保存
+      </div>
+
+    </div>
+    <!-- Labels -->
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;">
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">1 粘性侧边栏</span>
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">2 粘性顶栏</span>
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">3 玻璃拟态卡片</span>
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">4 视差背景层</span>
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">5 吐司提示</span>
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">6 无限跑马灯</span>
+      <span style="background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 9px; padding: 4px 8px; border-radius: 4px; font-weight: 600;">7 信息层级清晰</span>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+</style>

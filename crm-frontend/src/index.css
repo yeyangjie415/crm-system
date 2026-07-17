@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary-50: #eff6ff;
+    --primary-100: #dbeafe;
+    --primary-500: #3b82f6;
+    --primary-700: #1d4ed8;
+    --glass-card: rgba(255, 255, 255, 0.65);
+    --glass-sidebar: rgba(255, 255, 255, 0.55);
+    --glass-modal: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --text-heading: #0f172a;
+    --text-body: #334155;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #334155;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root { min-height: 100vh; }
+}
+
+@layer components {
+  .glass {
+    @apply backdrop-blur-md border border-white/70;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .glass-sidebar {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-right: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .glass-modal {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .glass-topbar {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .interactive {
+    @apply transition-all duration-200 ease-out cursor-pointer;
+  }
+  .interactive:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .interactive:active { transform: scale(0.98); }
+
+  .table-row {
+    @apply transition-all duration-150;
+  }
+  .table-row:hover {
+    background: rgba(59, 130, 246, 0.03);
+    transform: scale(1.005);
+  }
+
+  .nav-icon {
+    @apply transition-all duration-200 cursor-pointer flex items-center justify-center;
+    width: 36px; height: 36px; border-radius: 8px; color: #94a3b8; font-size: 18px;
+  }
+  .nav-icon:hover {
+    transform: scale(1.1);
+    background: rgba(59, 130, 246, 0.06);
+    color: #3b82f6;
+  }
+  .nav-icon.active {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 500ms ease-out, transform 500ms ease-out;
+  }
+  .reveal-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .status-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold;
+  }
+  .status-following { background: rgba(59,130,246,0.1); color: #3b82f6; }
+  .status-won { background: rgba(16,185,129,0.1); color: #10b981; }
+  .status-lost { background: rgba(239,68,68,0.1); color: #ef4444; }
+  .status-reporting { background: rgba(245,158,11,0.1); color: #f59e0b; }
+  .status-vip { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  .input-glass {
+    @apply px-3 py-2 bg-white/50 border border-black/5 rounded-lg text-sm text-slate-700
+           placeholder:text-slate-400 outline-none transition-all duration-200;
+  }
+  .input-glass:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+[data-sonner-toaster] {
+  --toast-bg: rgba(255, 255, 255, 0.85) !important;
+  --toast-border: rgba(255, 255, 255, 0.9) !important;
+}

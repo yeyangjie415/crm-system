@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./crm.db"
+}
+
+model User {
+  id              String   @id
+  name            String
+  username        String   @unique
+  password        String
+  role            String
+  permissionLevel String
+  avatar          String?
+  createdAt       String
+  lastLogin       String?
+  disabled        Boolean  @default(false)
+}
+
+model Customer {
+  id                String   @id
+  name              String
+  shortName         String?
+  region            String
+  type              String
+  positioning       String
+  customerAttribute String?
+  createdBy         String
+  createdByName     String
+  createdAt         String
+  notes             String?
+  deleted           Boolean  @default(false)
+  hiddenBy          String   @default("[]")   // JSON array
+  deletedBy         String?
+  deletedAt         String?
+  provinceCode      String?
+  provinceName      String?
+  cityCode          String?
+  cityName          String?
+  districtCode      String?
+  districtName      String?
+  ownedBy           String?
+  ownedByName       String?
+  lastActivityAt    String?
+  reclaimedAt       String?
+  reclaimDays       Int      @default(30)
+  // JSON fields stored as strings
+  accessControl     String   @default("[]")   // JSON array of CustomerAccess
+  annotations       String   @default("[]")   // JSON array of CustomerAnnotation
+
+  contacts          Contact[]
+  projects          Project[]
+  contracts         Contract[]
+}
+
+model Contact {
+  id          String   @id
+  name        String
+  phone       String
+  position    String
+  description String?
+  describedBy String?
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id              String   @id
+  name            String
+  customerId      String
+  customerName    String
+  contactName     String?
+  reportStatus    String
+  followStatus    String
+  amount          Float
+  nextFollowUp    String?
+  nextFollowUpDate String?
+  createdAt       String
+  createdBy       String
+
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model FollowRecord {
+  id        String @id
+  projectId String
+  content   String
+  recordedBy String
+  recordedAt String
+}
+
+model Contract {
+  id                    String   @id
+  customerId            String
+  customerName          String
+  projectId             String
+  projectName           String
+  contractDate          String
+  attributedTo          String
+  attributedToName      String
+  projectAmount         Float
+  settlementAmount      Float
+  extraAmount           Float
+  extraTaxIncluded      Boolean
+  extraPaid             Boolean  @default(false)
+  customerAttribute     String
+  isFirstContract       Boolean
+  approved              Boolean  @default(false)
+  cancelled             Boolean  @default(false)
+  submitted             Boolean  @default(false)
+  stampContractUploaded Boolean  @default(false)
+  invoiceUploaded       Boolean  @default(false)
+  contractFile          String?
+  invoiceFile           String?
+  processFiles          String   @default("[]")  // JSON array
+
+  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  payments              Payment[]
+  archivedFiles         ArchivedFile[]
+}
+
+model Payment {
+  id          String   @id
+  contractId  String
+  condition   String
+  amount      Float
+  completed   Boolean  @default(false)
+  paymentDate String?
+  voucherFile String?
+
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model ArchivedFile {
+  id         String @id
+  contractId String
+  name       String
+  category   String
+  data       String
+  uploadedAt String
+
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id          String  @id
+  date        String
+  category    String
+  amount      Float
+  hasInvoice  Boolean
+  project     String?
+  reason      String
+  notes       String?
+  status      String
+  submittedBy String
+}
+
+model Visit {
+  id           String  @id
+  date         String
+  salesperson  String
+  customerId   String
+  customerName String
+  location     String
+  contact      String
+  duration     Float
+}
+
+model Task {
+  id         String  @id
+  title      String
+  content    String
+  assignedBy String
+  assignedTo String
+  createdAt  String
+  deadline   String
+  completed  Boolean @default(false)
+  source     String
+}
+
+model AuditLog {
+  id         String @id
+  userId     String
+  userName   String
+  action     String
+  targetType String
+  targetId   String?
+  targetName String?
+  detail     String
+  timestamp  String
+}
+
+model Notification {
+  id           String  @id
+  type         String
+  fromUserId   String
+  fromUserName String
+  toUserId     String
+  customerId   String
+  customerName String
+  status       String
+  createdAt    String
+  read         Boolean @default(false)
+  contractId   String?
+}
+
+model AppConfig {
+  id    String @id
+  value String // JSON value
+}

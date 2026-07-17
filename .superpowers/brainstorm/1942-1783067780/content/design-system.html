@@ -1,0 +1,336 @@
+<h2>设计系统 & 组件规范 · 晨曦玻璃</h2>
+<p class="subtitle">完整的设计 token、组件样式和 7 项效果的技术实现方案</p>
+
+<!-- SECTION 1: Color System -->
+<div class="section">
+<h3>🎨 色彩体系</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+<!-- Primary -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">主色 · Slate Blue</div>
+<div style="display: flex; gap: 8px;">
+<div style="width: 48px; height: 48px; background: #eff6ff; border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; font-size: 8px; color: #3b82f6; padding-bottom: 4px;">50</div>
+<div style="width: 48px; height: 48px; background: #dbeafe; border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; font-size: 8px; color: #2563eb; padding-bottom: 4px;">100</div>
+<div style="width: 48px; height: 48px; background: #93c5fd; border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; font-size: 8px; color: #fff; padding-bottom: 4px;">300</div>
+<div style="width: 48px; height: 48px; background: #3b82f6; border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; font-size: 8px; color: #fff; padding-bottom: 4px; font-weight: 700;">500</div>
+<div style="width: 48px; height: 48px; background: #1d4ed8; border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; font-size: 8px; color: #fff; padding-bottom: 4px;">700</div>
+</div>
+<div style="font-size: 10px; color: #94a3b8; margin-top: 8px;">按钮 / 链接 / 选中态 / 主强调</div>
+</div>
+
+<!-- Glass -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">玻璃层 · 透明度梯度</div>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="display: flex; align-items: center; gap: 8px;">
+  <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.9); border-radius: 6px;"></div>
+  <span style="font-size: 10px; color: #475569;">Modal · 85% 不透明</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px;">
+  <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.85); border-radius: 6px;"></div>
+  <span style="font-size: 10px; color: #475569;">Card · 65% 不透明</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px;">
+  <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.7); border-radius: 6px;"></div>
+  <span style="font-size: 10px; color: #475569;">Sidebar · 45% 不透明</span>
+</div>
+</div>
+</div>
+
+<!-- Status -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">语义色 · 状态标签</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+<div style="padding: 4px 10px; background: rgba(59,130,246,0.1); color: #3b82f6; border-radius: 6px; font-size: 10px; font-weight: 600;">跟进中</div>
+<div style="padding: 4px 10px; background: rgba(16,185,129,0.1); color: #10b981; border-radius: 6px; font-size: 10px; font-weight: 600;">成交</div>
+<div style="padding: 4px 10px; background: rgba(239,68,68,0.1); color: #ef4444; border-radius: 6px; font-size: 10px; font-weight: 600;">丢单</div>
+<div style="padding: 4px 10px; background: rgba(245,158,11,0.1); color: #f59e0b; border-radius: 6px; font-size: 10px; font-weight: 600;">报备中</div>
+<div style="padding: 4px 10px; background: rgba(139,92,246,0.1); color: #8b5cf6; border-radius: 6px; font-size: 10px; font-weight: 600;">VIP</div>
+</div>
+</div>
+
+<!-- Neutral -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">中性色 · 文字层级</div>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-size: 14px; font-weight: 700; color: #0f172a;">Heading · Slate 900</div>
+<div style="font-size: 12px; color: #334155;">Body · Slate 700</div>
+<div style="font-size: 11px; color: #64748b;">Secondary · Slate 500</div>
+<div style="font-size: 10px; color: #94a3b8;">Muted · Slate 400</div>
+<div style="font-size: 9px; color: #cbd5e1;">Disabled · Slate 300</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- SECTION 2: Typography -->
+<div class="section">
+<h3>🔤 字体排版</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">字体族</div>
+<div style="font-family: 'Georgia', 'Noto Serif SC', serif; font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 2px;">Noto Serif SC</div>
+<div style="font-size: 9px; color: #94a3b8; margin-bottom: 12px;">Display 字体 · 页面标题和统计数字</div>
+<div style="font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 13px; color: #475569; line-height: 1.6;">
+  -apple-system / PingFang SC<br>
+  正文和界面文字使用系统字体栈<br>
+  保证中文渲染质量和性能
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 8px;">Body 字体 · 正文和 UI 控件</div>
+<div style="margin-top: 10px; font-size: 20px; font-weight: 600; color: #1e293b; font-variant-numeric: tabular-nums; font-family: monospace;">
+  ¥1,284,500.00
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 2px;">等宽数字 · tabular-nums 对齐金额</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">字号阶梯 (Tailwind)</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<div style="font-size: 24px; font-weight: 700; color: #0f172a;">页面大标题 · text-2xl</div>
+<div style="font-size: 18px; font-weight: 600; color: #1e293b;">区块标题 · text-lg</div>
+<div style="font-size: 14px; font-weight: 600; color: #334155;">卡片标题 · text-sm font-semibold</div>
+<div style="font-size: 13px; color: #475569;">正文 · text-sm (13px)</div>
+<div style="font-size: 11px; color: #64748b;">辅助文字 / 表格内容 · text-xs</div>
+<div style="font-size: 10px; color: #94a3b8;">标签 / 注释 · text-[10px]</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- SECTION 3: Component Patterns -->
+<div class="section">
+<h3>🧩 核心组件样式</h3>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+
+<!-- Buttons -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">按钮 · 4 种变体</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="padding: 8px 16px; background: #3b82f6; color: #fff; border-radius: 8px; font-size: 11px; font-weight: 600; text-align: center;">Primary · 主要操作</div>
+<div style="padding: 8px 16px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.08); color: #334155; border-radius: 8px; font-size: 11px; text-align: center;">Secondary · 次要操作</div>
+<div style="padding: 8px 16px; background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; border-radius: 8px; font-size: 11px; text-align: center;">Danger · 危险操作</div>
+<div style="padding: 6px 12px; background: rgba(59,130,246,0.06); color: #3b82f6; border-radius: 6px; font-size: 10px; text-align: center; width: fit-content;">Ghost · 文字按钮</div>
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 8px;">微交互：hover 时 scale(1.02) + shadow-lg</div>
+</div>
+
+<!-- Inputs -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">表单控件</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div>
+  <div style="font-size: 9px; color: #64748b; margin-bottom: 3px; font-weight: 600;">客户名称</div>
+  <div style="padding: 8px 10px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 7px; font-size: 11px; color: #334155;">华科信息技术有限公司</div>
+</div>
+<div>
+  <div style="font-size: 9px; color: #64748b; margin-bottom: 3px; font-weight: 600;">客户类型</div>
+  <div style="padding: 8px 10px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 7px; font-size: 11px; color: #334155; display: flex; justify-content: space-between;">业主 <span style="color:#94a3b8;">▾</span></div>
+</div>
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 8px;">聚焦时：border → blue-400 + ring-2</div>
+</div>
+
+<!-- Table -->
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 16px; grid-column: 1 / -1;">
+<div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 10px;">数据表格 · 客户列表</div>
+<div style="overflow: hidden; border-radius: 8px; border: 1px solid rgba(0,0,0,0.05);">
+  <!-- Table header -->
+  <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 100px 80px; background: rgba(241,245,249,0.6); font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; padding: 8px 12px; letter-spacing: 0.3px;">
+    <span>客户名称</span><span>项目名称</span><span>最近跟进</span><span>金额</span><span>状态</span>
+  </div>
+  <!-- Row 1 -->
+  <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 100px 80px; padding: 10px 12px; font-size: 11px; color: #334155; border-bottom: 1px solid rgba(0,0,0,0.03); align-items: center;">
+    <span style="font-weight: 600;">华科信息技术</span>
+    <span>ERP系统部署</span>
+    <span style="font-size: 9px; color: #94a3b8;">3天前</span>
+    <span style="font-variant-numeric: tabular-nums;">¥320,000</span>
+    <span style="font-size: 9px; padding: 2px 8px; background: rgba(59,130,246,0.08); color: #3b82f6; border-radius: 4px; font-weight: 600;">跟进中</span>
+  </div>
+  <!-- Row 2 -->
+  <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 100px 80px; padding: 10px 12px; font-size: 11px; color: #334155; border-bottom: 1px solid rgba(0,0,0,0.03); align-items: center;">
+    <span style="font-weight: 600;">鼎新科技</span>
+    <span>数据平台建设</span>
+    <span style="font-size: 9px; color: #94a3b8;">1周前</span>
+    <span style="font-variant-numeric: tabular-nums;">¥580,000</span>
+    <span style="font-size: 9px; padding: 2px 8px; background: rgba(16,185,129,0.08); color: #10b981; border-radius: 4px; font-weight: 600;">成交</span>
+  </div>
+  <!-- Row 3 (hover state) -->
+  <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 100px 80px; padding: 10px 12px; font-size: 11px; color: #334155; align-items: center; background: rgba(59,130,246,0.03);">
+    <span style="font-weight: 600;">远航集团</span>
+    <span>安防监控系统</span>
+    <span style="font-size: 9px; color: #94a3b8;">今天</span>
+    <span style="font-variant-numeric: tabular-nums;">¥1,200,000</span>
+    <span style="font-size: 9px; padding: 2px 8px; background: rgba(245,158,11,0.08); color: #f59e0b; border-radius: 4px; font-weight: 600;">报备中</span>
+  </div>
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 6px;">行 hover：淡蓝底色 + 微缩放(1.005)。表头粘性固定。</div>
+</div>
+
+</div>
+</div>
+
+<!-- SECTION 4: 7 Effects Implementation -->
+<div class="section">
+<h3>✨ 七项效果 · 技术实现方案</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">1 玻璃拟态</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  .glass-card {<br>
+  &nbsp;&nbsp;background: rgba(255,255,255,0.65);<br>
+  &nbsp;&nbsp;backdrop-filter: blur(12px);<br>
+  &nbsp;&nbsp;border: 1px solid rgba(255,255,255,0.8);<br>
+  &nbsp;&nbsp;border-radius: 12px;<br>
+  &nbsp;&nbsp;box-shadow: 0 1px 3px rgba(0,0,0,0.04);<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">Tailwind: bg-white/65 backdrop-blur-xl border border-white/80</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">2 粘性侧边栏/顶栏</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  .sidebar {<br>
+  &nbsp;&nbsp;position: sticky;<br>
+  &nbsp;&nbsp;top: 0;<br>
+  &nbsp;&nbsp;height: 100vh;<br>
+  }<br>
+  .topbar {<br>
+  &nbsp;&nbsp;position: sticky;<br>
+  &nbsp;&nbsp;top: 0;<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">Tailwind: sticky top-0 h-screen</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">3 微交互</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  .btn, .card-row, .nav-item {<br>
+  &nbsp;&nbsp;transition: all 200ms ease-out;<br>
+  }<br>
+  .btn:hover {<br>
+  &nbsp;&nbsp;transform: scale(1.02);<br>
+  &nbsp;&nbsp;box-shadow: 0 4px 12px rgba(0,0,0,0.1);<br>
+  }<br>
+  .card-row:hover {<br>
+  &nbsp;&nbsp;transform: scale(1.005);<br>
+  &nbsp;&nbsp;background: rgba(59,130,246,0.03);<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">所有可点击元素 200ms transition + scale</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">4 滚动显现</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  .reveal {<br>
+  &nbsp;&nbsp;opacity: 0;<br>
+  &nbsp;&nbsp;transform: translateY(16px);<br>
+  &nbsp;&nbsp;transition: all 500ms ease-out;<br>
+  }<br>
+  .reveal.visible {<br>
+  &nbsp;&nbsp;opacity: 1;<br>
+  &nbsp;&nbsp;transform: translateY(0);<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">IntersectionObserver + CSS class toggle</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">5 吐司提示</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  .toast {<br>
+  &nbsp;&nbsp;position: fixed; top: 16px; right: 16px;<br>
+  &nbsp;&nbsp;glass-card 样式<br>
+  &nbsp;&nbsp;animation: slideIn 300ms,<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;fadeOut 300ms 2.7s forwards;<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">3秒自动消失 + 滑入动画。sonner 或自建</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">6 视差滚动</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  .parallax-bg {<br>
+  &nbsp;&nbsp;position: fixed;<br>
+  &nbsp;&nbsp;z-index: 0;<br>
+  }<br>
+  .parallax-layer {<br>
+  &nbsp;&nbsp;transform: translateY(var(--scroll));<br>
+  &nbsp;&nbsp;/* scroll 由 JS 按 0.3x 速度计算 */<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">首页背景光晕层滚动速度 0.3x</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 10px; padding: 14px;">
+<div style="font-size: 10px; font-weight: 700; color: #3b82f6;">7 无限跑马灯</div>
+<div style="font-size: 9px; color: #475569; font-family: monospace; margin-top: 6px; line-height: 1.6;">
+  @keyframes marquee {<br>
+  &nbsp;&nbsp;0% { translateX(0); }<br>
+  &nbsp;&nbsp;100% { translateX(-50%); }<br>
+  }<br>
+  .marquee:hover {<br>
+  &nbsp;&nbsp;animation-play-state: paused;<br>
+  }
+</div>
+<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">底部客户 LOGO 条，hover 暂停</div>
+</div>
+
+</div>
+</div>
+
+<!-- SECTION 5: Page Types -->
+<div class="section">
+<h3>📄 Phase 1 页面清单</h3>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 8px;">
+  <span style="font-size: 18px;">🔐</span>
+  <div style="flex: 1;">
+    <div style="font-size: 11px; font-weight: 700; color: #1e293b;">登录页</div>
+    <div style="font-size: 9px; color: #94a3b8;">全屏玻璃面板 + 视差背景 · 账号密码登录 · 记住30天</div>
+  </div>
+  <span style="font-size: 8px; background: rgba(59,130,246,0.08); color: #3b82f6; padding: 2px 6px; border-radius: 4px;">1 页</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 8px;">
+  <span style="font-size: 18px;">📊</span>
+  <div style="flex: 1;">
+    <div style="font-size: 11px; font-weight: 700; color: #1e293b;">首页仪表盘</div>
+    <div style="font-size: 9px; color: #94a3b8;">统计卡片 + 待办列表 + 快捷操作 + 跑马灯 · 右侧个人信息栏</div>
+  </div>
+  <span style="font-size: 8px; background: rgba(59,130,246,0.08); color: #3b82f6; padding: 2px 6px; border-radius: 4px;">1 页</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 8px;">
+  <span style="font-size: 18px;">📋</span>
+  <div style="flex: 1;">
+    <div style="font-size: 11px; font-weight: 700; color: #1e293b;">客户管理 · 列表</div>
+    <div style="font-size: 9px; color: #94a3b8;">表格视图 + 搜索/筛选/排序 + 批量操作 · 权限过滤</div>
+  </div>
+  <span style="font-size: 8px; background: rgba(59,130,246,0.08); color: #3b82f6; padding: 2px 6px; border-radius: 4px;">1 页</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 8px;">
+  <span style="font-size: 18px;">📝</span>
+  <div style="flex: 1;">
+    <div style="font-size: 11px; font-weight: 700; color: #1e293b;">客户管理 · 详情</div>
+    <div style="font-size: 9px; color: #94a3b8;">客户信息卡片 + 联系人列表 + 项目列表 + 跟进时间轴 + 弹窗表单</div>
+  </div>
+  <span style="font-size: 8px; background: rgba(59,130,246,0.08); color: #3b82f6; padding: 2px 6px; border-radius: 4px;">1 页</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8); border-radius: 8px;">
+  <span style="font-size: 18px;">⚙️</span>
+  <div style="flex: 1;">
+    <div style="font-size: 11px; font-weight: 700; color: #1e293b;">权限设置</div>
+    <div style="font-size: 9px; color: #94a3b8;">用户列表 + 角色管理 + 权限矩阵 · 超级管理员专属</div>
+  </div>
+  <span style="font-size: 8px; background: rgba(59,130,246,0.08); color: #3b82f6; padding: 2px 6px; border-radius: 4px;">1 页</span>
+</div>
+</div>
+</div>
