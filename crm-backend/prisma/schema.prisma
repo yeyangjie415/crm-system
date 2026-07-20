@@ -42,6 +42,7 @@ model Customer {
   cityName          String?
   districtCode      String?
   districtName      String?
+  detailedAddress   String?
   ownedBy           String?
   ownedByName       String?
   lastActivityAt    String?

@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { Expense } from '@/types'
 import { generateId } from '@/mock/customers'
 import { expensesApi, isBackendAvailable } from '@/lib/api'
+import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 
 export interface NewExpenseInput {
   date: string
@@ -30,15 +32,22 @@ const ExpenseContext = createContext<ExpenseContextType>({
 
 export function ExpenseProvider({ children }: { children: ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const { loginVersion } = useAuth()
 
   useEffect(() => {
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      expensesApi.list().then(data => {
-        if (Array.isArray(data) && data.length > 0) setExpenses(data)
-      }).catch(err => console.error('[API]', err))
-    })
-  }, [])
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+    const load = () => {
+      isBackendAvailable().then(ok => {
+        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
+        expensesApi.list().then(data => {
+          if (Array.isArray(data) && data.length > 0) setExpenses(data)
+        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
+      })
+    }
+    load()
+    return () => clearTimeout(timer)
+  }, [loginVersion])
 
   const addExpense = useCallback((input: NewExpenseInput): Expense => {
     const newExpense: Expense = {
@@ -54,18 +63,36 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       submittedBy: input.submittedBy,
     }
     setExpenses(prev => [...prev, newExpense])
-    isBackendAvailable().then(ok => { if (ok) expensesApi.create(newExpense).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      expensesApi.create(newExpense).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
     return newExpense
   }, [])
 
   const updateExpense = useCallback((id: string, input: Partial<Expense>) => {
     setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...input } : e))
-    isBackendAvailable().then(ok => { if (ok) expensesApi.update(id, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      expensesApi.update(id, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const deleteExpense = useCallback((id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id))
-    isBackendAvailable().then(ok => { if (ok) expensesApi.delete(id).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      expensesApi.delete(id).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   return (

@@ -299,7 +299,11 @@ export const mockExpenses: Expense[] = [
 ]
 
 export function generateId(prefix: string): string {
-  return `${prefix}-${crypto.randomUUID().slice(0, 8)}`
+  // crypto.randomUUID() requires HTTPS; use getRandomValues for HTTP compatibility
+  const buf = new Uint8Array(4)
+  crypto.getRandomValues(buf)
+  const hex = Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('')
+  return `${prefix}-${hex}`
 }
 
 export const mockVisits: Visit[] = [

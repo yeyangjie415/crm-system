@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
-import { Check, Clock, ExternalLink, MessageSquare } from 'lucide-react'
+import { Check, Clock, ExternalLink } from 'lucide-react'
 import GlassCard from '@/components/glass/GlassCard'
 import { useTasks } from '@/hooks/useTasks'
 import { useCustomers } from '@/hooks/useCustomers'
@@ -41,7 +41,7 @@ function getSourceLabel(source: Task['source']) {
 export default function TaskList() {
   const { user, isAdmin } = useAuth()
   const { tasks: allTasks, updateTask } = useTasks()
-  const { customers, followRecords } = useCustomers()
+  const { customers, followRecords, deleteFollowRecord } = useCustomers()
   const navigate = useNavigate()
 
   /* ---- Filter tasks by user permission ---- */
@@ -86,6 +86,12 @@ export default function TaskList() {
   const handleComplete = (taskId: string) => {
     updateTask(taskId, { completed: true })
     toast.success('任务已完成')
+  }
+
+  const handlePlanComplete = (planId: string) => {
+    const recordId = planId.replace(/^plan-/, '')
+    deleteFollowRecord(recordId)
+    toast.success('跟进计划已完成')
   }
 
   const handleNavigate = (task: Task) => {
@@ -157,9 +163,13 @@ export default function TaskList() {
           {planItems.map(item => (
             <div key={item.id} className="table-row w-full p-2.5 rounded-lg border border-black/3 bg-blue-50/30">
               <div className="flex items-center gap-3 w-full">
-                <div className="w-5 h-5 rounded-md border-2 border-blue-200 flex items-center justify-center shrink-0">
-                  <MessageSquare size={10} className="text-blue-400" />
-                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handlePlanComplete(item.id) }}
+                  className="w-5 h-5 rounded-md border-2 border-blue-200 flex items-center justify-center shrink-0 interactive hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
+                  title="标记为已完成"
+                >
+                  <Check size={12} className="text-emerald-500 opacity-0 hover:opacity-100" />
+                </button>
                 <div
                   className="flex-1 min-w-0 cursor-pointer group"
                   onClick={() => item.linkTo && navigate(item.linkTo)}

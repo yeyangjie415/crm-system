@@ -133,46 +133,37 @@ export default function CustomerListPage() {
       }
 
       const labelToValue: Record<string, string> = { '业主': 'owner', '集成商': 'integrator', '渠道商': 'channel', 'VIP客户': 'vip', '重点客户': 'key', '普通客户': 'normal', '低价值': 'low', '待筛选': 'pending', '公司': 'company', '个人': 'individual' }
-      let success = 0
-      let failed = 0
+      let total = 0
+      let blank = 0
 
       for (let i = 1; i < lines.length; i++) {
         const cols = parseCSVLine(lines[i])
         const name = cols[nameIdx]?.trim()
-        if (!name) { failed++; continue }
-
-        const rawType = cols[typeIdx]?.trim()
-        const rawPos = cols[posIdx]?.trim()
-        const rawAttr = cols[attrIdx]?.trim()
-
-        try {
-          addCustomer({
-            name,
-            region: '未填写',
-            type: (labelToValue[rawType] || rawType || 'owner') as CustomerType,
-            positioning: (labelToValue[rawPos] || rawPos || 'normal') as CustomerPositioning,
-            customerAttribute: (labelToValue[rawAttr] || rawAttr || 'company') as CustomerAttribute,
-            detailedAddress: cols[addrIdx]?.trim() || undefined,
-            createdBy: user?.id || 'unknown',
-            createdByName: cols[creatorIdx]?.trim() || user?.name || '未知用户',
-            contacts: cols[contactNameIdx]?.trim()
-              ? [{ name: cols[contactNameIdx].trim(), phone: cols[contactPhoneIdx]?.trim() || '', position: cols[contactPosIdx]?.trim() || '', description: undefined }]
-              : [],
-            provinceCode: undefined,
-            provinceName: undefined,
-            cityCode: undefined,
-            cityName: undefined,
-            districtCode: undefined,
-            districtName: undefined,
-            notes: undefined,
-          })
-          success++
-        } catch {
-          failed++
-        }
+        if (!name) { blank++; continue }
+        total++
+        addCustomer({
+          name,
+          region: '未填写',
+          type: (labelToValue[cols[typeIdx]?.trim()] || cols[typeIdx]?.trim() || 'owner') as CustomerType,
+          positioning: (labelToValue[cols[posIdx]?.trim()] || cols[posIdx]?.trim() || 'normal') as CustomerPositioning,
+          customerAttribute: (labelToValue[cols[attrIdx]?.trim()] || cols[attrIdx]?.trim() || 'company') as CustomerAttribute,
+          detailedAddress: cols[addrIdx]?.trim() || undefined,
+          createdBy: user?.id || 'unknown',
+          createdByName: cols[creatorIdx]?.trim() || user?.name || '未知用户',
+          contacts: cols[contactNameIdx]?.trim()
+            ? [{ name: cols[contactNameIdx].trim(), phone: cols[contactPhoneIdx]?.trim() || '', position: cols[contactPosIdx]?.trim() || '', description: undefined }]
+            : [],
+          provinceCode: undefined,
+          provinceName: undefined,
+          cityCode: undefined,
+          cityName: undefined,
+          districtCode: undefined,
+          districtName: undefined,
+          notes: undefined,
+        })
       }
 
-      toast.success(`导入完成：成功 ${success} 条${failed ? `，失败 ${failed} 条` : ''}`)
+      toast.success(`已导入 ${total} 条客户数据${blank ? `，${blank} 条跳过（无名称）` : ''}`)
     } catch (err) {
       toast.error('文件读取失败，请检查 CSV 格式')
     } finally {

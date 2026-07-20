@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { Visit } from '@/types'
 import { generateId } from '@/mock/customers'
 import { visitsApi, isBackendAvailable } from '@/lib/api'
+import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 
 export interface NewVisitInput {
   date: string
@@ -29,15 +31,22 @@ const VisitContext = createContext<VisitContextType>({
 
 export function VisitProvider({ children }: { children: ReactNode }) {
   const [visits, setVisits] = useState<Visit[]>([])
+  const { loginVersion } = useAuth()
 
   useEffect(() => {
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      visitsApi.list().then(data => {
-        if (Array.isArray(data) && data.length > 0) setVisits(data)
-      }).catch(err => console.error('[API]', err))
-    })
-  }, [])
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+    const load = () => {
+      isBackendAvailable().then(ok => {
+        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
+        visitsApi.list().then(data => {
+          if (Array.isArray(data) && data.length > 0) setVisits(data)
+        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
+      })
+    }
+    load()
+    return () => clearTimeout(timer)
+  }, [loginVersion])
 
   const addVisit = useCallback((input: NewVisitInput): Visit => {
     const newVisit: Visit = {
@@ -52,18 +61,36 @@ export function VisitProvider({ children }: { children: ReactNode }) {
     }
     setVisits(prev => [...prev, newVisit])
     // Fire-and-forget to backend
-    isBackendAvailable().then(ok => { if (ok) visitsApi.create(newVisit).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      visitsApi.create(newVisit).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
     return newVisit
   }, [])
 
   const updateVisit = useCallback((id: string, input: Partial<NewVisitInput>) => {
     setVisits(prev => prev.map(v => v.id === id ? { ...v, ...input } : v))
-    isBackendAvailable().then(ok => { if (ok) visitsApi.update(id, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      visitsApi.update(id, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const deleteVisit = useCallback((id: string) => {
     setVisits(prev => prev.filter(v => v.id !== id))
-    isBackendAvailable().then(ok => { if (ok) visitsApi.delete(id).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      visitsApi.delete(id).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   return (

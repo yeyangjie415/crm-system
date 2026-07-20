@@ -172,8 +172,12 @@ export const tasksApi = {
 /* ------------------------------------------------------------------ */
 
 export const followRecordsApi = {
-  list: (projectId: string) => request<any[]>('GET', `/follow-records?projectId=${projectId}`),
+  list: (projectId?: string) => {
+    const qs = projectId ? `?projectId=${projectId}` : ''
+    return request<any[]>('GET', `/follow-records${qs}`)
+  },
   create: (data: any) => request<any>('POST', '/follow-records', data),
+  delete: (id: string) => request<any>('DELETE', `/follow-records/${id}`),
 }
 
 /* ------------------------------------------------------------------ */
@@ -202,12 +206,13 @@ export const systemApi = {
 }
 
 let backendAvailable: boolean | null = null
+let lastCheckTime = 0
 let checkingBackend = false
 let checkQueue: Array<(ok: boolean) => void> = []
 
 export async function isBackendAvailable(): Promise<boolean> {
-  // Return cached true immediately
-  if (backendAvailable === true) return true
+  // Return cached true if checked within 30s
+  if (backendAvailable === true && Date.now() - lastCheckTime < 30_000) return true
   // If another check is in flight, queue and wait
   if (checkingBackend) {
     return new Promise(resolve => { checkQueue.push(resolve) })
@@ -218,14 +223,14 @@ export async function isBackendAvailable(): Promise<boolean> {
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`
     const res = await fetch(`${API_BASE}/auth/me`, { method: 'HEAD', headers })
     backendAvailable = res.ok || res.status === 401
+    lastCheckTime = Date.now()
     return backendAvailable
   } catch {
-    // Don't cache false — next call will retry
     backendAvailable = null
+    lastCheckTime = 0
     return false
   } finally {
     checkingBackend = false
-    // Resolve all queued callbacks
     const queue = checkQueue
     checkQueue = []
     queue.forEach(resolve => resolve(backendAvailable === true))

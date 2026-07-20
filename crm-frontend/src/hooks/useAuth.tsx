@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
   updateOwnPassword: (newPassword: string) => void
+  loginVersion: number
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   logout: () => {},
   updateOwnPassword: () => {},
+  loginVersion: 0,
 })
 
 const SEED_USERS: User[] = [
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null
     }
   })
+  const [loginVersion, setLoginVersion] = useState(0)
 
   const { users, updateUser } = useUsers()
   const { logAction } = useAuditLog()
@@ -61,18 +64,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await apiLogin(username, password)
       const backendUser: User = { ...data.user, password }
       setUser(backendUser)
+      setLoginVersion(v => v + 1)
       const { password: _, ...safeUser } = backendUser
       localStorage.setItem('crm_user', JSON.stringify(safeUser))
       logAction(backendUser.id, backendUser.name, 'login', 'system', undefined, undefined, '用户登录')
       return true
-    } catch {
+    } catch (e) {
+      console.error('[LOGIN] Backend login failed:', e)
       // Backend unavailable — fall back to local login
       const found = users.find(u => u.username === username && u.password === password && !u.disabled)
       if (found) {
         setUser(found)
+        setLoginVersion(v => v + 1)
         const { password: _, ...safeUser } = found
         localStorage.setItem('crm_user', JSON.stringify(safeUser))
         logAction(found.id, found.name, 'login', 'system', undefined, undefined, '用户登录')
+        return true
+      }
+      // Last resort: use built-in seed defaults when local user store is empty
+      const seedMatch = SEED_USERS.find(u => u.username === username && u.password === password && !u.disabled)
+      if (seedMatch) {
+        setUser(seedMatch)
+        setLoginVersion(v => v + 1)
+        const { password: _, ...safeUser } = seedMatch
+        localStorage.setItem('crm_user', JSON.stringify(safeUser))
+        logAction(seedMatch.id, seedMatch.name, 'login', 'system', undefined, undefined, '用户登录(离线模式)')
         return true
       }
       return false
@@ -105,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, updateUser, logAction])
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, permissionLevel, hasPermission, login, logout, updateOwnPassword }}>
+    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, permissionLevel, hasPermission, login, logout, updateOwnPassword, loginVersion }}>
       {children}
     </AuthContext.Provider>
   )

@@ -19,10 +19,7 @@ export default function Marquee() {
 
   return (
     <div className="shrink-0 glass-topbar border-t border-white/30 py-2 overflow-hidden">
-      <div
-        className="flex whitespace-nowrap will-change-transform"
-        style={{ animation: 'marquee 45s linear infinite', transform: 'translateZ(0)' }}
-      >
+      <div className="flex whitespace-nowrap animate-marquee hover:[animation-play-state:paused]">
         {[...names, ...names].map((name, i) => (
           <span
             key={i}

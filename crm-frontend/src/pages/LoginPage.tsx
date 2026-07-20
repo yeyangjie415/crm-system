@@ -115,11 +115,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-[9px] text-slate-300">
-            测试账号：admin / admin123 或 sales / sales123
-          </p>
-        </div>
       </div>
 
       {/* Bottom marquee */}

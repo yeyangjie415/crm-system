@@ -25,3 +25,13 @@ followRecordsRouter.post('/', async (req: Request, res: Response) => {
     res.status(500).json({ error: (err as Error).message })
   }
 })
+
+followRecordsRouter.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    await prisma.followRecord.delete({ where: { id: req.params.id } })
+    res.status(204).send()
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: (err as Error).message })
+  }
+})

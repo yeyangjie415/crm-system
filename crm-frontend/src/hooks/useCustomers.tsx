@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import type { Customer, FollowRecord, Contact, Project, CustomerType, CustomerPositioning, ReportStatus, FollowStatus, SharePermission, CustomerAttribute } from '@/types'
 import { generateId } from '@/mock/customers'
+import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 import { useAuditLog } from '@/hooks/useAuditLog'
 import { customersApi, followRecordsApi, isBackendAvailable } from '@/lib/api'
 
@@ -70,6 +72,7 @@ export interface NewAnnotationInput {
   content: string
   annotatedBy: string
   annotatedAt: string
+  projectId?: string
 }
 
 export interface UpdateCustomerInput {
@@ -108,6 +111,7 @@ interface CustomerContextType {
   updateProject: (customerId: string, projectId: string, input: UpdateProjectInput) => void
   deleteProject: (customerId: string, projectId: string) => void
   addFollowRecord: (projectId: string, input: NewFollowRecordInput) => FollowRecord
+  deleteFollowRecord: (recordId: string) => void
   addAnnotation: (customerId: string, input: NewAnnotationInput) => void
   shareCustomer: (customerId: string, input: ShareCustomerInput) => void
   removeAccess: (customerId: string, userId: string) => void
@@ -134,6 +138,7 @@ const CustomerContext = createContext<CustomerContextType>({
   updateProject: () => {},
   deleteProject: () => {},
   addFollowRecord: () => ({ id: '', projectId: '', content: '', recordedBy: '', recordedAt: '' }),
+  deleteFollowRecord: () => {},
   addAnnotation: () => {},
   shareCustomer: () => {},
   removeAccess: () => {},
@@ -150,30 +155,53 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [followRecords, setFollowRecords] = useState<FollowRecord[]>([])
   const { logAction } = useAuditLog()
+  const { loginVersion } = useAuth()
   const customersRef = useRef(customers)
   customersRef.current = customers
 
-  // Try to load from backend on mount
+  // Try to load from backend on mount and on re-login
   useEffect(() => {
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      customersApi.list().then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setCustomers(data.map((c: any) => ({
-            ...c,
-            contacts: c.contacts || [],
-            projects: c.projects || [],
-            accessControl: c.accessControl || [],
-            annotations: c.annotations || [],
-            hiddenBy: c.hiddenBy || [],
-            deleted: c.deleted || false,
-          })))
-        }
-      }).catch(err => console.error('[API]', err))
-      // Also load follow records if available
-      // For now, followRecords stay as mock since there's no dedicated API
-    })
-  }, [])
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+    const load = () => {
+      isBackendAvailable().then(ok => {
+        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
+        customersApi.list().then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setCustomers(data.map((c: any) => ({
+              ...c,
+              contacts: c.contacts || [],
+              projects: c.projects || [],
+              accessControl: c.accessControl || [],
+              annotations: c.annotations || [],
+              hiddenBy: c.hiddenBy || [],
+              deleted: c.deleted || false,
+            })))
+          }
+        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
+      })
+    }
+    load()
+    return () => clearTimeout(timer)
+  }, [loginVersion])
+
+  // Try to load followRecords from backend
+  useEffect(() => {
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+    const load = () => {
+      isBackendAvailable().then(ok => {
+        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
+        followRecordsApi.list().then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setFollowRecords(data.map((r: any) => ({ ...r })))
+          }
+        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
+      })
+    }
+    load()
+    return () => clearTimeout(timer)
+  }, [loginVersion])
 
   const getCustomer = useCallback((id: string) => {
     return customers.find(c => c.id === id && !c.deleted)
@@ -218,7 +246,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     // Set customerId on contacts
     newCustomer.contacts = newCustomer.contacts.map(ct => ({ ...ct, customerId: newCustomer.id }))
     setCustomers(prev => [...prev, newCustomer])
-    isBackendAvailable().then(ok => { if (ok) customersApi.create(newCustomer).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.create(newCustomer).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
     return newCustomer
   }, [])
 
@@ -250,7 +284,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       }
       return { ...c, ...updates }
     }))
-    isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.update(customerId, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const addContact = useCallback((customerId: string, input: NewContactInput) => {
@@ -265,7 +305,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     setCustomers(prev => prev.map(c =>
       c.id === customerId ? { ...c, contacts: [...c.contacts, newContact] } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) customersApi.addContact(customerId, newContact).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.addContact(customerId, newContact).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const updateContact = useCallback((customerId: string, contactId: string, input: UpdateContactInput) => {
@@ -284,7 +330,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         ),
       } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) customersApi.updateContact(customerId, contactId, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.updateContact(customerId, contactId, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const deleteContact = useCallback((customerId: string, contactId: string) => {
@@ -294,7 +346,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         contacts: c.contacts.filter(ct => ct.id !== contactId),
       } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) customersApi.deleteContact(customerId, contactId).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.deleteContact(customerId, contactId).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const addProject = useCallback((customerId: string, input: NewProjectInput): Project => {
@@ -317,7 +375,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     ))
     const customer = customersRef.current.find(c => c.id === customerId)
     if (customer) {
-      isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { projects: [...customer.projects, newProject] }).catch(err => console.error('[API]', err)) })
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        customersApi.update(customerId, { projects: [...customer.projects, newProject] }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
     return newProject
   }, [])
@@ -345,7 +409,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       const syncedProjects = customer.projects.map(p =>
         p.id === projectId ? { ...p, name: input.name, contactName: input.contactName, reportStatus: input.reportStatus, followStatus: input.followStatus, amount: input.amount, nextFollowUp: input.nextFollowUp, nextFollowUpDate: input.nextFollowUpDate } : p
       )
-      isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { projects: syncedProjects }).catch(err => console.error('[API]', err)) })
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        customersApi.update(customerId, { projects: syncedProjects }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
   }, [])
 
@@ -361,7 +431,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     const customer = customersRef.current.find(c => c.id === customerId)
     if (customer) {
       const syncedProjects = customer.projects.filter(p => p.id !== projectId)
-      isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { projects: syncedProjects }).catch(err => console.error('[API]', err)) })
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        customersApi.update(customerId, { projects: syncedProjects }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
   }, [])
 
@@ -374,21 +450,45 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       recordedAt: input.recordedAt,
     }
     setFollowRecords(prev => [...prev, newRecord])
-    isBackendAvailable().then(ok => { if (ok) followRecordsApi.create(newRecord).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      followRecordsApi.create(newRecord).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
     // Also update the project's nextFollowUp fields if provided
     return newRecord
   }, [])
 
+  const deleteFollowRecord = useCallback((recordId: string) => {
+    setFollowRecords(prev => prev.filter(r => r.id !== recordId))
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      followRecordsApi.delete(recordId).catch(err => {
+        console.error('[API]', err)
+        toast.error('删除失败：' + (err?.message || '网络错误'))
+      })
+    })
+  }, [])
+
   const addAnnotation = useCallback((customerId: string, input: NewAnnotationInput) => {
+    const newAnn = { id: generateId('a'), content: input.content, annotatedBy: input.annotatedBy, annotatedAt: input.annotatedAt, projectId: input.projectId }
     setCustomers(prev => prev.map(c =>
       c.id === customerId
-        ? { ...c, annotations: [...(c.annotations || []), { id: generateId('a'), content: input.content, annotatedBy: input.annotatedBy, annotatedAt: input.annotatedAt }] }
+        ? { ...c, annotations: [...(c.annotations || []), newAnn] }
         : c
     ))
     const customer = customersRef.current.find(c => c.id === customerId)
     if (customer) {
-      const syncedAnnotations = [...(customer.annotations || []), { id: generateId('a'), content: input.content, annotatedBy: input.annotatedBy, annotatedAt: input.annotatedAt }]
-      isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { annotations: syncedAnnotations }).catch(err => console.error('[API]', err)) })
+      const syncedAnnotations = [...(customer.annotations || []), newAnn]
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        customersApi.update(customerId, { annotations: syncedAnnotations }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
   }, [])
 
@@ -427,7 +527,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
           grantedAt: new Date().toISOString(),
         }]
       }
-      isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { accessControl: syncedAccessControl }).catch(err => console.error('[API]', err)) })
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        customersApi.update(customerId, { accessControl: syncedAccessControl }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
   }, [])
 
@@ -440,7 +546,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     const customer = customersRef.current.find(c => c.id === customerId)
     if (customer) {
       const syncedAccessControl = customer.accessControl.filter(ac => ac.userId !== userId)
-      isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { accessControl: syncedAccessControl }).catch(err => console.error('[API]', err)) })
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        customersApi.update(customerId, { accessControl: syncedAccessControl }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
   }, [])
 
@@ -456,7 +568,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         deletedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
       }
     }))
-    isBackendAvailable().then(ok => { if (ok) customersApi.delete(customerId, userId, userName).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.delete(customerId, userId, userName).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [logAction])
 
   const hardDeleteCustomer = useCallback((customerId: string, userName: string) => {
@@ -467,7 +585,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       }
       return prev.filter(c => c.id !== customerId)
     })
-    isBackendAvailable().then(ok => { if (ok) customersApi.hardDelete(customerId).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.hardDelete(customerId).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [logAction])
 
   const restoreCustomer = useCallback((customerId: string, userName: string) => {
@@ -482,7 +606,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         deletedAt: undefined,
       }
     }))
-    isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { deleted: false, hiddenBy: [], deletedBy: null, deletedAt: null }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.update(customerId, { deleted: false, hiddenBy: [], deletedBy: null, deletedAt: null }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [logAction])
 
   const reassignCustomer = useCallback((customerId: string, newCreatedBy: string, newCreatedByName: string, userName: string) => {
@@ -499,7 +629,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         deletedAt: undefined,
       }
     }))
-    isBackendAvailable().then(ok => { if (ok) customersApi.update(customerId, { createdBy: newCreatedBy, createdByName: newCreatedByName, deleted: false, hiddenBy: '[]', deletedBy: null, deletedAt: null }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.update(customerId, { createdBy: newCreatedBy, createdByName: newCreatedByName, deleted: false, hiddenBy: [], deletedBy: null, deletedAt: null }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [logAction])
 
   /* ── Public Pool / 公海 ── */
@@ -509,7 +645,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       if (c.id !== customerId) return c
       return { ...c, ownedBy: userId, ownedByName: userName, reclaimedAt: undefined, lastActivityAt: new Date().toISOString().replace('T', ' ').slice(0, 19) }
     }))
-    isBackendAvailable().then(ok => { if (ok) customersApi.claim(customerId, userId, userName).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.claim(customerId, userId, userName).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const releaseToPool = useCallback((customerId: string) => {
@@ -517,7 +659,13 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       if (c.id !== customerId) return c
       return { ...c, ownedBy: undefined, ownedByName: undefined, reclaimedAt: new Date().toISOString().replace('T', ' ').slice(0, 19), lastActivityAt: undefined }
     }))
-    isBackendAvailable().then(ok => { if (ok) customersApi.release(customerId).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      customersApi.release(customerId).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const updateActivity = useCallback((customerId: string) => {
@@ -542,6 +690,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       updateProject,
       deleteProject,
       addFollowRecord,
+      deleteFollowRecord,
       addAnnotation,
       shareCustomer,
       removeAccess,

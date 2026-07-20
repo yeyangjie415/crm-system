@@ -113,6 +113,7 @@ export interface CustomerAnnotation {
   content: string
   annotatedBy: string
   annotatedAt: string
+  projectId?: string
 }
 
 export interface Customer {

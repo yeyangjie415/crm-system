@@ -117,7 +117,7 @@ export default function CustomerInfo({ customer, canEdit, canShare, onOpenShare 
       createdByName: canReassign ? editCreatedByName : undefined,
     }
     updateCustomer(customer.id, input)
-    toast.success('客户信息已更新')
+    // No immediate success toast — hook shows error toast on API failure
     setEditing(false)
   }
 

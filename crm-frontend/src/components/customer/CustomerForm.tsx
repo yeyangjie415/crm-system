@@ -101,7 +101,7 @@ export default function CustomerForm({ open, onClose }: Props) {
         .filter(e => e.name.trim())
         .map(e => ({ name: e.name.trim(), phone: e.phone.trim(), position: e.position.trim(), description: e.description.trim() || undefined })),
     })
-    toast.success('客户创建成功')
+    // No immediate success toast — hook shows error toast on API failure
     resetForm()
     onClose()
   }

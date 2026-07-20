@@ -69,7 +69,7 @@ export default function ProjectList({ projects, customerId, customerName, contac
       amount: Number(amount) || 0,
       nextFollowUp: nextFollowUp.trim() || undefined,
       nextFollowUpDate: nextFollowUpDate || undefined,
-      createdBy: user?.id || 'unknown',
+      createdBy: user?.name || '未知用户',
     })
     // Sync follow-up plan as a follow record
     if (nextFollowUp.trim()) {
@@ -184,7 +184,7 @@ export default function ProjectList({ projects, customerId, customerName, contac
                       {project.contactName && (
                         <span className="text-slate-400 truncate max-w-[200px]">{project.contactName}</span>
                       )}
-                      <span className="text-slate-300">创建于 {project.createdAt}</span>
+                      <span className="text-slate-300">创建人 {project.createdBy} · {project.createdAt}</span>
                     </div>
                   </div>
                   {project.nextFollowUp && (

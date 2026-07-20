@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { User, UserRole, PermissionLevel } from '@/types'
 import { generateId } from '@/mock/customers'
 import { usersApi, isBackendAvailable } from '@/lib/api'
+import { toast } from 'sonner'
 
 const USERS_STORAGE_KEY = 'crm_users'
 
@@ -72,16 +73,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // Load from backend on mount
   useEffect(() => {
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      usersApi.list().then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const merged = data.map((u: any) => ({ ...u, password: u.password || '' }))
-          setUsers(merged)
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged))
-        }
-      }).catch(err => console.error('[API]', err))
-    })
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+    const load = () => {
+      isBackendAvailable().then(ok => {
+        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
+        usersApi.list().then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            const merged = data.map((u: any) => ({ ...u, password: u.password || '' }))
+            setUsers(merged)
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged))
+          }
+        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
+      })
+    }
+    load()
+    return () => clearTimeout(timer)
   }, [])
 
   const addUser = useCallback((input: NewUserInput): User => {
@@ -96,7 +103,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       disabled: false,
     }
     setUsers(prev => [...prev, newUser])
-    isBackendAvailable().then(ok => { if (ok) usersApi.create(newUser).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      usersApi.create(newUser).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
     return newUser
   }, [])
 
@@ -111,12 +124,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
         ...(input.permissionLevel !== undefined && { permissionLevel: input.permissionLevel }),
       } : u
     ))
-    isBackendAvailable().then(ok => { if (ok) usersApi.update(id, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      usersApi.update(id, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const deleteUser = useCallback((id: string) => {
     setUsers(prev => prev.filter(u => u.id !== id))
-    isBackendAvailable().then(ok => { if (ok) usersApi.delete(id).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      usersApi.delete(id).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const toggleDisable = useCallback((id: string) => {
@@ -125,7 +150,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     ))
     const updated = users.find(u => u.id === id)
     if (updated) {
-      isBackendAvailable().then(ok => { if (ok) usersApi.update(id, { disabled: !updated.disabled }).catch(err => console.error('[API]', err)) })
+      isBackendAvailable().then(ok => {
+        if (!ok) return
+        usersApi.update(id, { disabled: !updated.disabled }).catch(err => {
+          console.error('[API]', err)
+          toast.error('保存失败：' + (err?.message || '网络错误'))
+        })
+      })
     }
   }, [users])
 

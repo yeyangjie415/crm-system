@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import { generateId } from '@/mock/customers'
 import { contractsApi, isBackendAvailable } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 import type { Contract, Payment, ArchivedFileCategory, ArchivedFile } from '@/types'
 
 export interface NewContractInput {
@@ -106,28 +108,41 @@ function buildContract(input: NewContractInput, id?: string): Contract {
 
 export function ContractProvider({ children }: { children: ReactNode }) {
   const [contracts, setContracts] = useState<Contract[]>([])
+  const { loginVersion } = useAuth()
 
   // Try to load from backend on mount
   useEffect(() => {
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      contractsApi.list().then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setContracts(data.map((c: any) => ({
-            ...c,
-            payments: c.payments || [],
-            archivedFiles: c.archivedFiles || [],
-            processFiles: c.processFiles || [],
-          })))
-        }
-      }).catch(err => console.error('[API]', err))
-    })
-  }, [])
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+    const load = () => {
+      isBackendAvailable().then(ok => {
+        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
+        contractsApi.list().then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setContracts(data.map((c: any) => ({
+              ...c,
+              payments: c.payments || [],
+              archivedFiles: c.archivedFiles || [],
+              processFiles: c.processFiles || [],
+            })))
+          }
+        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
+      })
+    }
+    load()
+    return () => clearTimeout(timer)
+  }, [loginVersion])
 
   const addContract = useCallback((input: NewContractInput): Contract => {
     const newContract = buildContract(input)
     setContracts(prev => [...prev, newContract])
-    isBackendAvailable().then(ok => { if (ok) contractsApi.create(newContract).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.create(newContract).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
     return newContract
   }, [])
 
@@ -146,7 +161,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       if (input.attributedToName !== undefined) updates.attributedToName = input.attributedToName
       return { ...c, ...updates }
     }))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.update(id, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.update(id, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const updatePayment = useCallback((contractId: string, paymentId: string, updates: Partial<Payment>) => {
@@ -158,7 +179,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       const allDone = updatedPayments.every(p => p.completed)
       return { ...c, payments: updatedPayments, extraPaid: allDone ? true : c.extraPaid }
     }))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.updatePayment(contractId, paymentId, updates).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.updatePayment(contractId, paymentId, updates).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const addPayment = useCallback((contractId: string, input: { condition: string; amount: number }) => {
@@ -172,7 +199,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       }
       return { ...c, payments: [...c.payments, newPayment] }
     }))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.addPayment(contractId, input).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.addPayment(contractId, input).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const removePayment = useCallback((contractId: string, paymentId: string) => {
@@ -180,28 +213,52 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       if (c.id !== contractId) return c
       return { ...c, payments: c.payments.filter(p => p.id !== paymentId) }
     }))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.removePayment(contractId, paymentId).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.removePayment(contractId, paymentId).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const uploadContractFile = useCallback((contractId: string, fileData: string) => {
     setContracts(prev => prev.map(c =>
       c.id === contractId ? { ...c, contractFile: fileData, stampContractUploaded: true } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.update(contractId, { contractFile: fileData, stampContractUploaded: true }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.update(contractId, { contractFile: fileData, stampContractUploaded: true }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const submitForApproval = useCallback((contractId: string) => {
     setContracts(prev => prev.map(c =>
       c.id === contractId ? { ...c, submitted: true } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.update(contractId, { submitted: true }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.update(contractId, { submitted: true }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const approveContract = useCallback((contractId: string) => {
     setContracts(prev => prev.map(c =>
       c.id === contractId ? { ...c, approved: true, cancelled: false, submitted: false } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.update(contractId, { approved: true, cancelled: false, submitted: false }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.update(contractId, { approved: true, cancelled: false, submitted: false }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const rejectContract = useCallback((contractId: string) => {
@@ -210,19 +267,37 @@ export function ContractProvider({ children }: { children: ReactNode }) {
         ? { ...c, approved: false, cancelled: false, submitted: false, contractFile: '', stampContractUploaded: false }
         : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.update(contractId, { approved: false, cancelled: false, submitted: false, contractFile: '', stampContractUploaded: false }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.update(contractId, { approved: false, cancelled: false, submitted: false, contractFile: '', stampContractUploaded: false }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const cancelContract = useCallback((contractId: string) => {
     setContracts(prev => prev.map(c =>
       c.id === contractId ? { ...c, approved: false, cancelled: true } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.update(contractId, { approved: false, cancelled: true }).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.update(contractId, { approved: false, cancelled: true }).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const deleteContract = useCallback((contractId: string) => {
     setContracts(prev => prev.filter(c => c.id !== contractId))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.delete(contractId).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.delete(contractId).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const addArchivedFile = useCallback((contractId: string, file: { name: string; category: ArchivedFileCategory; data: string }) => {
@@ -238,7 +313,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     setContracts(prev => prev.map(c =>
       c.id === contractId ? { ...c, archivedFiles: [...c.archivedFiles, newFile] } : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.addArchivedFile(contractId, newFile).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.addArchivedFile(contractId, newFile).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   const removeArchivedFile = useCallback((contractId: string, fileId: string) => {
@@ -247,7 +328,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
         ? { ...c, archivedFiles: c.archivedFiles.filter(f => f.id !== fileId) }
         : c
     ))
-    isBackendAvailable().then(ok => { if (ok) contractsApi.removeArchivedFile(contractId, fileId).catch(err => console.error('[API]', err)) })
+    isBackendAvailable().then(ok => {
+      if (!ok) return
+      contractsApi.removeArchivedFile(contractId, fileId).catch(err => {
+        console.error('[API]', err)
+        toast.error('保存失败：' + (err?.message || '网络错误'))
+      })
+    })
   }, [])
 
   return (
