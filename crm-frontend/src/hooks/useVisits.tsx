@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import type { Visit } from '@/types'
 import { generateId } from '@/mock/customers'
 import { visitsApi, isBackendAvailable } from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
+import { useBackendLoad } from '@/hooks/useBackendLoad'
 
 export interface NewVisitInput {
   date: string
@@ -31,22 +32,14 @@ const VisitContext = createContext<VisitContextType>({
 
 export function VisitProvider({ children }: { children: ReactNode }) {
   const [visits, setVisits] = useState<Visit[]>([])
-  const { loginVersion } = useAuth()
+  const { loginVersion, user } = useAuth()
 
-  useEffect(() => {
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-    const load = () => {
-      isBackendAvailable().then(ok => {
-        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
-        visitsApi.list().then(data => {
-          if (Array.isArray(data) && data.length > 0) setVisits(data)
-        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
-      })
-    }
-    load()
-    return () => clearTimeout(timer)
-  }, [loginVersion])
+  // Load from backend on mount and on re-login
+  useBackendLoad<Visit>(
+    () => visitsApi.list().then(data => data.map((v: any) => ({ ...v }))),
+    setVisits,
+    { trigger: loginVersion, loggedIn: !!user, clearOnLogout: true },
+  )
 
   const addVisit = useCallback((input: NewVisitInput): Visit => {
     const newVisit: Visit = {

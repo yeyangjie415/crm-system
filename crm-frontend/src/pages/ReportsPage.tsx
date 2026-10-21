@@ -1,19 +1,22 @@
 import { useState, useMemo } from 'react'
-import { BarChart3, TrendingUp, FileText, Users, AlertTriangle } from 'lucide-react'
+import { BarChart3, TrendingUp, FileText, Users, AlertTriangle, Receipt } from 'lucide-react'
 import GlassCard from '@/components/glass/GlassCard'
 import BarChart from '@/components/reports/BarChart'
 import ProgressBar from '@/components/reports/ProgressBar'
 import DonutRing from '@/components/reports/DonutRing'
 import { useContracts } from '@/hooks/useContracts'
 import { useCustomers } from '@/hooks/useCustomers'
+import { useExpenses } from '@/hooks/useExpenses'
 import { useAuth } from '@/hooks/useAuth'
 import { canViewInList } from '@/lib/permissions'
+import { EXPENSE_CATEGORIES } from '@/types'
 
 const TABS = [
   { key: 'performance', label: '业绩总览', icon: BarChart3 },
   { key: 'collections', label: '回款分析', icon: TrendingUp },
   { key: 'pipeline',   label: '合同流水', icon: FileText },
   { key: 'customers',  label: '客户分析', icon: Users },
+  { key: 'expenses',   label: '费用分析', icon: Receipt },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -31,7 +34,6 @@ const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#e
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('performance')
-  const [period, setPeriod] = useState<'year' | 'quarter' | 'month'>('year')
   const { user, isAdmin } = useAuth()
   const { contracts: allContracts } = useContracts()
   const { customers: allCustomers } = useCustomers()
@@ -44,6 +46,59 @@ export default function ReportsPage() {
   const customers = useMemo(() =>
     isAdmin ? allCustomers : allCustomers.filter(c => !c.deleted && canViewInList(user?.id || '', user?.permissionLevel || 'general', c)),
     [allCustomers, isAdmin, user?.id, user?.permissionLevel])
+
+  /* ---- Expense Analysis（数据源为服务端按权限返回的报销单） ---- */
+  const { expenses: allExpenses } = useExpenses()
+  const validExpenses = useMemo(() => allExpenses.filter(e => e.status !== 'rejected'), [allExpenses])
+
+  const expenseAnalysis = useMemo(() => {
+    const totalCost = validExpenses.reduce((s, e) => s + e.totalAmount, 0)
+    const thisMonth = new Date().toISOString().slice(0, 7)
+    const monthCost = validExpenses.filter(e => e.createdAt.slice(0, 7) === thisMonth).reduce((s, e) => s + e.totalAmount, 0)
+    const submitters = [...new Set(validExpenses.map(e => e.submittedById))]
+    const perCapita = submitters.length > 0 ? totalCost / submitters.length : 0
+    const customerCount = new Set(validExpenses.map(e => e.customerId)).size
+
+    // 按外勤月份趋势（近 6 个月）
+    const byMonth = new Map<string, number>()
+    for (const e of validExpenses) {
+      const m = e.fieldworkDate.slice(0, 7)
+      byMonth.set(m, (byMonth.get(m) || 0) + e.totalAmount)
+    }
+    const monthTrend = [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6)
+
+    // 按费用类型
+    const byCategory = new Map<string, number>()
+    for (const e of validExpenses) {
+      for (const it of e.items) byCategory.set(it.category, (byCategory.get(it.category) || 0) + it.amount)
+    }
+
+    // 单客户服务成本
+    const byCustomer = new Map<string, { cost: number; count: number }>()
+    for (const e of validExpenses) {
+      const entry = byCustomer.get(e.customerName) || { cost: 0, count: 0 }
+      entry.cost += e.totalAmount
+      entry.count++
+      byCustomer.set(e.customerName, entry)
+    }
+
+    // 人均外勤费用
+    const bySubmitter = new Map<string, { cost: number; count: number }>()
+    for (const e of validExpenses) {
+      const entry = bySubmitter.get(e.submittedByName) || { cost: 0, count: 0 }
+      entry.cost += e.totalAmount
+      entry.count++
+      bySubmitter.set(e.submittedByName, entry)
+    }
+
+    return {
+      totalCost, monthCost, perCapita, customerCount,
+      monthTrend, byCategory,
+      byCustomer: [...byCustomer.entries()].sort((a, b) => b[1].cost - a[1].cost),
+      bySubmitter: [...bySubmitter.entries()].sort((a, b) => b[1].cost - a[1].cost),
+      rejectedCount: allExpenses.length - validExpenses.length,
+    }
+  }, [validExpenses, allExpenses.length])
 
   /* ── Performance Tab ── */
 
@@ -332,6 +387,95 @@ export default function ReportsPage() {
                   </div>
                 ))}
             </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* ═══════════ Expenses 费用分析（SOP 第七章成本分析） ═══════════ */}
+      {activeTab === 'expenses' && (
+        <div className="space-y-4">
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: '外勤费用总成本', value: formatWan(expenseAnalysis.totalCost), sub: `${validExpenses.length} 张单据${expenseAnalysis.rejectedCount > 0 ? `（另有 ${expenseAnalysis.rejectedCount} 张已驳回）` : ''}`, color: 'text-blue-500' },
+              { label: '本月发生额', value: formatWan(expenseAnalysis.monthCost), sub: '', color: 'text-amber-500' },
+              { label: '人均外勤费用', value: formatWan(Math.round(expenseAnalysis.perCapita)), sub: '', color: 'text-violet-500' },
+              { label: '覆盖客户数', value: `${expenseAnalysis.customerCount}`, sub: '产生外勤费用的客户', color: 'text-emerald-500' },
+            ].map(card => (
+              <GlassCard key={card.label} className="text-center py-3">
+                <p className="text-[10px] text-slate-400 mb-1">{card.label}</p>
+                <p className={`text-base font-bold font-display ${card.color}`}>{card.value}</p>
+                {card.sub && <p className="text-[9px] text-slate-400 mt-0.5">{card.sub}</p>}
+              </GlassCard>
+            ))}
+          </div>
+
+          {/* Monthly trend */}
+          <GlassCard>
+            <h3 className="text-xs font-semibold text-slate-700 mb-4">外勤费用月度趋势（按外勤时间）</h3>
+            {expenseAnalysis.monthTrend.length === 0 ? (
+              <p className="text-xs text-slate-400 py-6 text-center">暂无数据</p>
+            ) : (
+              <BarChart
+                data={expenseAnalysis.monthTrend.map(([m, v]) => ({ label: m, value: v }))}
+                height={160}
+                formatValue={formatWan}
+              />
+            )}
+          </GlassCard>
+
+          {/* By category */}
+          <GlassCard>
+            <h3 className="text-xs font-semibold text-slate-700 mb-3">按费用类型分布</h3>
+            <DonutRing
+              segments={EXPENSE_CATEGORIES
+                .map((c, i) => ({ label: c, value: expenseAnalysis.byCategory.get(c) || 0, color: CHART_COLORS[i % CHART_COLORS.length] }))
+                .filter(s => s.value > 0)}
+              size={140}
+              centerLabel={formatWan(expenseAnalysis.totalCost)}
+            />
+          </GlassCard>
+
+          {/* Per-customer service cost */}
+          <GlassCard>
+            <h3 className="text-xs font-semibold text-slate-700 mb-3">单客户服务成本（降序）</h3>
+            {expenseAnalysis.byCustomer.length === 0 ? (
+              <p className="text-xs text-slate-400 py-6 text-center">暂无数据</p>
+            ) : (
+              <div className="space-y-3">
+                {expenseAnalysis.byCustomer.map(([name, v]) => (
+                  <ProgressBar
+                    key={name}
+                    label={name}
+                    value={v.cost}
+                    max={expenseAnalysis.byCustomer[0][1].cost}
+                    color="#3b82f6"
+                    sub={`${v.count} 张报销单 · ¥${v.cost.toLocaleString()}`}
+                  />
+                ))}
+              </div>
+            )}
+          </GlassCard>
+
+          {/* Per-person expense */}
+          <GlassCard>
+            <h3 className="text-xs font-semibold text-slate-700 mb-3">人均外勤费用明细（按提交人）</h3>
+            {expenseAnalysis.bySubmitter.length === 0 ? (
+              <p className="text-xs text-slate-400 py-6 text-center">暂无数据</p>
+            ) : (
+              <div className="space-y-3">
+                {expenseAnalysis.bySubmitter.map(([name, v]) => (
+                  <ProgressBar
+                    key={name}
+                    label={name}
+                    value={v.cost}
+                    max={expenseAnalysis.bySubmitter[0][1].cost}
+                    color="#8b5cf6"
+                    sub={`${v.count} 张报销单 · ¥${v.cost.toLocaleString()}`}
+                  />
+                ))}
+              </div>
+            )}
           </GlassCard>
         </div>
       )}

@@ -1,0 +1,10 @@
+{
+  "name": "crm-launcher",
+  "version": "1.2.0",
+  "description": "CRM System Launcher",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

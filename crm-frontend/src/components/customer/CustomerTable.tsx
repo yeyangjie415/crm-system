@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import StatusBadge from '@/components/common/StatusBadge'
@@ -6,7 +6,7 @@ import { useCustomers } from '@/hooks/useCustomers'
 import { useAuth } from '@/hooks/useAuth'
 import type { Customer } from '@/types'
 import { canViewDetail } from '@/lib/permissions'
-import { Tag, MessageSquare, Lock, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react'
+import { Tag, MessageSquare, Lock, RotateCcw, ChevronDown, ChevronRight, ArrowUpDown } from 'lucide-react'
 
 interface CustomerTableProps {
   customers: Customer[]
@@ -84,11 +84,50 @@ export default function CustomerTable({ customers, selected, onSelect }: Custome
     onSelect(selected.length === customers.length ? [] : customers.map(c => c.id))
   }
 
+  /* ── Sort ── */
+  const [sortKey, setSortKey] = useState<'followDate' | 'amount' | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  const cycleSort = (key: 'followDate' | 'amount') => {
+    if (sortKey !== key) {
+      setSortKey(key)
+      setSortDir('desc') // first click: desc
+    } else if (sortDir === 'desc') {
+      setSortDir('asc') // second click: asc
+    } else {
+      setSortKey(null) // third click: no sort
+    }
+  }
+
+  const sortedCustomers = useMemo(() => {
+    if (!sortKey) return customers
+    return [...customers].sort((a, b) => {
+      // Compute sort value for each customer
+      const getVal = (c: Customer): number => {
+        if (sortKey === 'amount') {
+          return Math.max(...(c.projects || []).map(p => p.amount || 0), 0)
+        }
+        // sortKey === 'followDate'
+        let latest = 0
+        for (const p of c.projects || []) {
+          const records = getFollowRecords(p.id)
+          for (const r of records) {
+            const t = new Date(r.recordedAt).getTime()
+            if (t > latest) latest = t
+          }
+        }
+        return latest
+      }
+      const va = getVal(a)
+      const vb = getVal(b)
+      return sortDir === 'desc' ? vb - va : va - vb
+    })
+  }, [customers, sortKey, sortDir, getFollowRecords])
+
   const formatAmount = (amount: number) => {
     if (amount >= 10000) return `¥${(amount / 10000).toFixed(1)}万`
     return `¥${amount.toLocaleString()}`
   }
-
 
   const handleSaveAnnotation = (customerId: string, projectId?: string) => {
     if (!annotationText.trim()) {
@@ -126,18 +165,42 @@ export default function CustomerTable({ customers, selected, onSelect }: Custome
               <th className="text-left py-3 px-3 hidden md:table-cell">创建人</th>
               <th className="text-left py-3 px-3 hidden md:table-cell">跟进人</th>
               <th className="text-left py-3 px-3">项目名称</th>
-              <th className="text-left py-3 px-3 hidden xl:table-cell">跟进时间轴</th>
-              <th className="text-right py-3 px-3 hidden lg:table-cell">项目金额</th>
+              <th className="text-left py-3 px-3 hidden xl:table-cell cursor-pointer select-none hover:text-blue-500 transition-colors" onClick={() => cycleSort('followDate')}>
+                <span className="inline-flex items-center gap-1">
+                  跟进时间轴
+                  <ArrowUpDown size={10} className={sortKey === 'followDate' ? 'text-blue-500' : 'text-slate-300'} />
+                </span>
+              </th>
+              <th className="text-right py-3 px-3 hidden lg:table-cell cursor-pointer select-none hover:text-blue-500 transition-colors" onClick={() => cycleSort('amount')}>
+                <span className="inline-flex items-center gap-1">
+                  项目金额
+                  <ArrowUpDown size={10} className={sortKey === 'amount' ? 'text-blue-500' : 'text-slate-300'} />
+                </span>
+              </th>
               <th className="text-center py-3 px-3">跟进状态</th>
               <th className="text-center py-3 px-3 whitespace-nowrap">查阅简标</th>
             </tr>
           </thead>
           <tbody>
-            {customers.map(customer => {
+            {sortedCustomers.map(customer => {
               const hasAccess = user ? canViewDetail(user.id, user.permissionLevel, customer) : false
               const isSoftDeleted = (customer.hiddenBy || []).length > 0
               const projects = customer.projects || []
-              const sortedProjects = [...projects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              const sortedProjects = [...projects].sort((a, b) => {
+                if (sortKey === 'amount') {
+                  return sortDir === 'desc' ? (b.amount || 0) - (a.amount || 0) : (a.amount || 0) - (b.amount || 0)
+                }
+                if (sortKey === 'followDate') {
+                  const getDate = (p: typeof a) => {
+                    const records = getFollowRecords(p.id)
+                    let latest = 0
+                    for (const r of records) { const t = new Date(r.recordedAt).getTime(); if (t > latest) latest = t }
+                    return latest
+                  }
+                  return sortDir === 'desc' ? getDate(b) - getDate(a) : getDate(a) - getDate(b)
+                }
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              })
               const latest = sortedProjects[0]
               const restProjects = sortedProjects.slice(1)
               const hasMultiple = projects.length > 1

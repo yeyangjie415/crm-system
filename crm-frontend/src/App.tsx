@@ -39,7 +39,10 @@ function LazyLoad({ children }: { children: ReactNode }) {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, sessionReady } = useAuth()
+  // Wait until a restored session has been validated against the backend,
+  // otherwise an expired token would render a "logged in" but dataless app.
+  if (!sessionReady) return <div className="p-5"><LoadingSkeleton /></div>
   if (!user) return <Navigate to="/login" replace />
   return <>{children}</>
 }
@@ -95,12 +98,12 @@ export default function App() {
       <AuditLogProvider>
         <PermissionConfigProvider>
           <AuthProvider>
-            <TaskProvider>
-              <VisitProvider>
-                <ExpenseProvider>
-                  <CustomerProvider>
-                    <ContractProvider>
-                      <NotificationProvider>
+            <CustomerProvider>
+              <NotificationProvider>
+                <TaskProvider>
+                  <VisitProvider>
+                    <ExpenseProvider>
+                      <ContractProvider>
                 <AppRoutes />
                 <Toaster
                   position="top-right"
@@ -114,12 +117,12 @@ export default function App() {
                     },
                   }}
                 />
-                      </NotificationProvider>
-                    </ContractProvider>
-                  </CustomerProvider>
-                </ExpenseProvider>
-              </VisitProvider>
-            </TaskProvider>
+                      </ContractProvider>
+                    </ExpenseProvider>
+                  </VisitProvider>
+                </TaskProvider>
+              </NotificationProvider>
+            </CustomerProvider>
           </AuthProvider>
         </PermissionConfigProvider>
       </AuditLogProvider>

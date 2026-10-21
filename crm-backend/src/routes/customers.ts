@@ -50,7 +50,7 @@ customersRouter.post('/', async (req: Request, res: Response) => {
         accessControl: JSON.stringify(accessControl || []),
         annotations: JSON.stringify(annotations || []),
         hiddenBy: JSON.stringify(hiddenBy || []),
-        contacts: contacts?.length ? { create: contacts } : undefined,
+        contacts: contacts?.length ? { create: contacts.map((c: any) => { const { customerId, ...rest } = c; return rest }) } : undefined,
         projects: projects?.length ? { create: projects } : undefined,
       },
       include: { contacts: true, projects: true },

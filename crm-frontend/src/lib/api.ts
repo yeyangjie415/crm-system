@@ -29,6 +29,13 @@ export function clearToken() {
   try { localStorage.removeItem(TOKEN_KEY) } catch { /* */ }
 }
 
+/** Dispatched when an authenticated request gets 401 (token expired/invalid). */
+export const AUTH_EXPIRED_EVENT = 'crm:auth-expired'
+
+export interface ApiError extends Error {
+  status?: number
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -36,6 +43,7 @@ async function request<T>(
   options?: { raw?: boolean }
 ): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const wasAuthenticated = !!authToken
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`
 
   const res = await fetch(`${API_BASE}${path}`, {
@@ -45,8 +53,16 @@ async function request<T>(
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || `HTTP ${res.status}`)
+    const parsed = await res.json().catch(() => ({ error: res.statusText }))
+    // A request that carried a token but was rejected means the session expired.
+    // Notify the app so it can clear the session (login itself is unauthenticated
+    // and its 401 means wrong credentials — not session expiry).
+    if (res.status === 401 && wasAuthenticated) {
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
+    }
+    const err: ApiError = new Error(parsed.error || `HTTP ${res.status}`)
+    err.status = res.status
+    throw err
   }
 
   if (res.status === 204) return undefined as T
@@ -153,6 +169,29 @@ export const expensesApi = {
   create: (data: any) => request<any>('POST', '/expenses', data),
   update: (id: string, data: any) => request<any>('PUT', `/expenses/${id}`, data),
   delete: (id: string) => request<any>('DELETE', `/expenses/${id}`),
+  /** 一级审核（直属主管）：approved=false 时 comment 必填 */
+  managerReview: (id: string, approved: boolean, comment?: string) =>
+    request<any>('POST', `/expenses/${id}/manager-review`, { approved, comment }),
+  /** 二级审核（财务）：approved=false 时 comment 必填 */
+  financeReview: (id: string, approved: boolean, comment?: string) =>
+    request<any>('POST', `/expenses/${id}/finance-review`, { approved, comment }),
+  /** 财务核销打款 */
+  pay: (id: string, comment?: string) =>
+    request<any>('POST', `/expenses/${id}/pay`, { comment }),
+  /** 申请人签收确认 */
+  settle: (id: string) =>
+    request<any>('POST', `/expenses/${id}/settle`, {}),
+}
+
+/* ------------------------------------------------------------------ */
+/*  Notifications                                                      */
+/* ------------------------------------------------------------------ */
+
+export const notificationsApi = {
+  list: (toUserId?: string) =>
+    request<any[]>('GET', `/notifications${toUserId ? `?toUserId=${toUserId}` : ''}`),
+  create: (data: any) => request<any>('POST', '/notifications', data),
+  update: (id: string, data: any) => request<any>('PUT', `/notifications/${id}`, data),
 }
 
 /* ------------------------------------------------------------------ */
@@ -165,6 +204,9 @@ export const tasksApi = {
   create: (data: any) => request<any>('POST', '/tasks', data),
   update: (id: string, data: any) => request<any>('PUT', `/tasks/${id}`, data),
   delete: (id: string) => request<any>('DELETE', `/tasks/${id}`),
+  submit: (id: string) => request<any>('POST', `/tasks/${id}/submit`),
+  approve: (id: string) => request<any>('POST', `/tasks/${id}/approve`),
+  reject: (id: string, reason: string) => request<any>('POST', `/tasks/${id}/reject`, { reason }),
 }
 
 /* ------------------------------------------------------------------ */

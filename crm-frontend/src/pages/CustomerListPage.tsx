@@ -13,7 +13,7 @@ import type { CustomerType, CustomerPositioning, CustomerAttribute } from '@/typ
 
 export default function CustomerListPage() {
   const { user, isAdmin, isSuperAdmin } = useAuth()
-  const { customers, addCustomer, softDeleteCustomer, hardDeleteCustomer, restoreCustomer, claimFromPool } = useCustomers()
+  const { customers, addCustomer, softDeleteCustomer, hardDeleteCustomer, claimFromPool } = useCustomers()
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<FilterState>({})
   const [selected, setSelected] = useState<string[]>([])

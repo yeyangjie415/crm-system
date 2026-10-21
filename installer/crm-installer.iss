@@ -1,12 +1,13 @@
-; CRM System v1.1 — Inno Setup Installer (all-in-one, no network needed)
+; CRM System v1.2 — Inno Setup Installer (all-in-one, no network needed)
 ; 编译前请确保已安装全部 node_modules：
 ;   cd crm-backend && npm install && npx prisma generate
 ;   cd crm-frontend && npm install
+;   cd crm-launcher && npm install
 ;   npm install          (root: concurrently)
 ; 编译: "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/crm-installer.iss
 
 #define MyAppName "CRM System"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "CRM Team"
 #define MyAppURL "http://localhost:5173"
 #define MyAppExeName "start.bat"
@@ -56,13 +57,18 @@ Source: "..\crm-backend\*"; DestDir: "{app}\crm-backend"; Flags: ignoreversion r
 ; Frontend — includes pre-installed node_modules
 Source: "..\crm-frontend\*"; DestDir: "{app}\crm-frontend"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "dist"
 
+; Launcher — Electron app
+Source: "..\crm-launcher\*"; DestDir: "{app}\crm-launcher"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "node_modules"
+
 [Icons]
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon; Comment: "启动 CRM System"
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Comment: "启动 CRM System"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "node.exe"; Parameters: "node_modules\electron\cli.js ."; WorkingDir: "{app}\crm-launcher"; Tasks: desktopicon; Comment: "启动 CRM System"; IconFilename: "{app}\crm-frontend\public\favicon.svg"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "node.exe"; Parameters: "node_modules\electron\cli.js ."; WorkingDir: "{app}\crm-launcher"; Comment: "启动 CRM System"; IconFilename: "{app}\crm-frontend\public\favicon.svg"
 Name: "{autoprograms}\卸载 CRM System"; Filename: "{uninstallexe}"; WorkingDir: "{app}"
 Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: startupicon
 
 [Run]
+; Install launcher dependencies
+Filename: "{cmd}"; Parameters: "/c cd /d ""{app}\crm-launcher"" && call npm install --silent"; StatusMsg: "正在安装启动管理器..."; Flags: runhidden waituntilterminated
 ; Initialize database (prisma client is already pre-generated in node_modules)
 Filename: "{cmd}"; Parameters: "/c cd /d ""{app}\crm-backend"" && npx prisma migrate deploy"; StatusMsg: "正在初始化数据库..."; Flags: runhidden waituntilterminated
 ; Seed default data

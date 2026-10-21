@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
@@ -45,8 +45,8 @@ export default function DashboardPage() {
     [allVisits, isAdmin, user?.name])
 
   const expenses = useMemo(() =>
-    isAdmin ? allExpenses : allExpenses.filter(e => e.submittedBy === user?.name),
-    [allExpenses, isAdmin, user?.name])
+    isAdmin ? allExpenses : allExpenses.filter(e => e.submittedById === user?.id),
+    [allExpenses, isAdmin, user?.id])
 
   // Tasks — general users see own tasks or assigned tasks
   const tasks = useMemo(() =>
@@ -59,10 +59,18 @@ export default function DashboardPage() {
   const [showExpenseForm, setShowExpenseForm] = useState(false)
 
   /* ---- Backend health check ---- */
+  const backendWasDownRef = useRef(false)
   useEffect(() => {
     const check = () => {
       isBackendAvailable().then(ok => {
-        if (!ok) toast.error('数据库运行异常，请重启软件', { duration: 0, id: 'db-error' })
+        if (!ok) {
+          backendWasDownRef.current = true
+          toast.error('数据库运行异常，请重启软件', { duration: 0, id: 'db-error' })
+        } else if (backendWasDownRef.current) {
+          backendWasDownRef.current = false
+          toast.dismiss('db-error')
+          toast.success('后端服务已恢复，请退出并重新登录以同步数据', { id: 'db-recovered', duration: 10000 })
+        }
       })
     }
     const interval = setInterval(check, 30000)
@@ -94,7 +102,7 @@ export default function DashboardPage() {
     .reduce((sum, p) => sum + p.amount, 0)
 
   /* ---- derived dashboard stats ---- */
-  const pendingExpenses = expenses.filter(e => e.status === 'pending').length
+  const pendingExpenses = expenses.filter(e => e.status === 'pending_manager' || e.status === 'pending_finance').length
   const activeTasks = tasks.filter(t => !t.completed).length
   const pendingApprovals = contracts.filter(c => c.submitted && !c.approved && !c.cancelled).length
 
@@ -152,12 +160,12 @@ export default function DashboardPage() {
 
     // Recent expenses
     expenses
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 3)
       .forEach(e => items.push({
-        time: e.date,
-        text: `报销「${e.reason}」¥${e.amount.toLocaleString()}`,
-        person: e.submittedBy || '—',
+        time: e.createdAt.slice(0, 10),
+        text: `报销「${e.customerName}」¥${e.totalAmount.toLocaleString()}`,
+        person: e.submittedByName || '—',
       }))
 
     return items

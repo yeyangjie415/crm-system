@@ -7,14 +7,16 @@ interface GlassCardProps {
   className?: string
   reveal?: boolean
   revealDelay?: number
+  onClick?: () => void
 }
 
-export default function GlassCard({ children, className, reveal = false, revealDelay }: GlassCardProps) {
+export default function GlassCard({ children, className, reveal = false, revealDelay, onClick }: GlassCardProps) {
   const { ref, visible } = useReveal<HTMLDivElement>({ delay: revealDelay })
 
   return (
     <div
       ref={reveal ? ref : undefined}
+      onClick={onClick}
       className={cn(
         'glass-card p-4',
         reveal && 'reveal',

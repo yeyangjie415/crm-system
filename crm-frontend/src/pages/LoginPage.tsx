@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useParallax } from '@/hooks/useParallax'
-import Marquee from '@/components/layout/Marquee'
 import { Building2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -11,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [connecting, setConnecting] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
   const scrollY = useParallax()
@@ -18,16 +18,22 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setTimeout(async () => {
+    setConnecting(false)
+    // Login retries briefly while the backend cold-starts; explain the wait.
+    const connectingTimer = setTimeout(() => setConnecting(true), 2500)
+    try {
       const ok = await login(username, password)
-      setLoading(false)
       if (ok) {
         toast.success('登录成功，欢迎回来')
         navigate('/')
       } else {
         toast.error('用户名或密码错误')
       }
-    }, 600)
+    } finally {
+      clearTimeout(connectingTimer)
+      setConnecting(false)
+      setLoading(false)
+    }
   }
 
   return (
@@ -113,14 +119,14 @@ export default function LoginPage() {
           >
             {loading ? '登录中...' : '登 录'}
           </button>
+          {connecting && (
+            <p className="text-center text-[11px] text-slate-400 mt-2">正在连接服务器…</p>
+          )}
         </form>
 
       </div>
 
-      {/* Bottom marquee */}
-      <div className="absolute bottom-0 left-0 right-0 z-10">
-        <Marquee />
-      </div>
+      {/* Bottom marquee removed */}
     </div>
   )
 }

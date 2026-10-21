@@ -16,14 +16,6 @@ interface Props {
 /*  tiny shared primitives                                            */
 /* ------------------------------------------------------------------ */
 
-function EditIcon({ onClick, title }: { onClick: () => void; title?: string }) {
-  return (
-    <button onClick={onClick} className="p-0.5 rounded text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-colors shrink-0" title={title || '编辑'}>
-      <Pencil size={11} />
-    </button>
-  )
-}
-
 function SaveCancel({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
   return (
     <span className="inline-flex items-center gap-0.5 ml-1 shrink-0">

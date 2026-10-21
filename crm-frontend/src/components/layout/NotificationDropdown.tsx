@@ -1,9 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useTasks } from '@/hooks/useTasks'
 import { useAuth } from '@/hooks/useAuth'
 import { NOTIFICATION_TYPE_LABELS } from '@/types'
 import type { Notification } from '@/types'
+import TaskRejectModal from '@/components/office/TaskRejectModal'
 import { Check, X, Bell } from 'lucide-react'
 
 interface Props {
@@ -16,6 +19,14 @@ function getTypeBadgeColor(type: Notification['type']) {
   if (type === 'contract_rejected') return 'bg-red-50 text-red-500'
   if (type === 'co_follow_request') return 'bg-blue-50 text-blue-600'
   if (type === 'co_follow_approved') return 'bg-emerald-50 text-emerald-600'
+  if (type === 'expense_submitted') return 'bg-amber-50 text-amber-600'
+  if (type === 'expense_manager_approved') return 'bg-blue-50 text-blue-600'
+  if (type === 'expense_finance_approved') return 'bg-indigo-50 text-indigo-600'
+  if (type === 'expense_paid') return 'bg-emerald-50 text-emerald-600'
+  if (type === 'expense_rejected') return 'bg-red-50 text-red-500'
+  if (type === 'task_submitted') return 'bg-amber-50 text-amber-600'
+  if (type === 'task_approved') return 'bg-emerald-50 text-emerald-600'
+  if (type === 'task_rejected') return 'bg-red-50 text-red-500'
   return 'bg-slate-50 text-slate-500'
 }
 
@@ -35,13 +46,57 @@ function getNotificationText(n: Notification) {
   if (n.type === 'co_follow_rejected') {
     return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}已拒绝共同跟进客户「{n.customerName}」</>
   }
+  if (n.type === 'expense_submitted') {
+    return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}提交了外勤费用报销（客户：{n.customerName}），待您一级审核</>
+  }
+  if (n.type === 'expense_manager_approved') {
+    return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}通过了报销单一级审核（客户：{n.customerName}），待财务审核</>
+  }
+  if (n.type === 'expense_finance_approved') {
+    return <>您的报销单（客户：{n.customerName}）已通过财务审核，等待打款</>
+  }
+  if (n.type === 'expense_paid') {
+    return <>您的报销单（客户：{n.customerName}）已打款，请签收确认</>
+  }
+  if (n.type === 'expense_rejected') {
+    return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}驳回了您的报销单（客户：{n.customerName}），请查看原因并整改重提</>
+  }
+  if (n.type === 'task_submitted') {
+    return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}提交了任务「{n.customerName}」的完成申请，待您确认</>
+  }
+  if (n.type === 'task_approved') {
+    return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}已确认任务「{n.customerName}」已完成</>
+  }
+  if (n.type === 'task_rejected') {
+    return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}驳回了任务「{n.customerName}」的完成申请{n.comment ? <>，原因：{n.comment}</> : null}</>
+  }
   return <><span className="font-medium text-slate-700">{n.fromUserName}</span>{' '}申请共同跟进客户「{n.customerName}」</>
 }
 
+const TASK_TYPES = ['task_submitted', 'task_approved', 'task_rejected']
+
+const EXPENSE_TYPES = ['expense_submitted', 'expense_manager_approved', 'expense_finance_approved', 'expense_paid', 'expense_rejected']
+
 export default function NotificationDropdown({ onClose }: Props) {
   const { user } = useAuth()
-  const { notifications: allNotifications, unreadCount, markAsRead, markAllAsRead, respondToRequest } = useNotifications()
+  const { notifications: allNotifications, unreadCount, markAsRead, markAllAsRead, respondToRequest, resolveNotification } = useNotifications()
+  const { approveTask, rejectTask } = useTasks()
   const navigate = useNavigate()
+  const [rejectingNotif, setRejectingNotif] = useState<Notification | null>(null)
+
+  const handleApproveTask = (n: Notification) => {
+    if (!n.taskId) return
+    approveTask(n.taskId)
+    resolveNotification(n.id, 'approved')
+    toast.success('已同意任务完成')
+  }
+
+  const handleRejectTask = (_task: { id: string; title: string }, reason: string) => {
+    if (!rejectingNotif?.taskId) return
+    rejectTask(rejectingNotif.taskId, reason)
+    resolveNotification(rejectingNotif.id, 'rejected')
+    toast.success('已驳回任务完成申请')
+  }
 
   /* Only show notifications the user received or initiated */
   const notifications = useMemo(() =>
@@ -86,15 +141,25 @@ export default function NotificationDropdown({ onClose }: Props) {
             const isCoFollowPending = n.type === 'co_follow_request' && n.status === 'pending'
             const isResolved = n.status === 'approved' || n.status === 'rejected'
             const isContractNotification = n.type === 'contract_submitted' || n.type === 'contract_approved' || n.type === 'contract_rejected'
+            const isExpenseNotification = EXPENSE_TYPES.includes(n.type)
+            const isTaskNotification = TASK_TYPES.includes(n.type)
+            const isTaskPending = n.type === 'task_submitted' && n.status === 'pending'
+            const isClickable = isContractNotification || isExpenseNotification || isTaskNotification
 
             return (
               <div
                 key={n.id}
-                className={`px-4 py-2.5 border-b border-black/[0.02] ${!n.read ? 'bg-blue-50/30' : ''} ${isContractNotification ? 'cursor-pointer hover:bg-blue-50/40' : ''}`}
+                className={`px-4 py-2.5 border-b border-black/[0.02] ${!n.read ? 'bg-blue-50/30' : ''} ${isClickable ? 'cursor-pointer hover:bg-blue-50/40' : ''}`}
                 onClick={() => {
                   if (!n.read) markAsRead(n.id)
                   if (isContractNotification && n.contractId) {
                     navigate(`/deals/${n.contractId}`)
+                    onClose()
+                  } else if (isExpenseNotification) {
+                    navigate('/expenses')
+                    onClose()
+                  } else if (isTaskNotification) {
+                    navigate('/office')
                     onClose()
                   }
                 }}
@@ -119,17 +184,17 @@ export default function NotificationDropdown({ onClose }: Props) {
                     <p className="text-[9px] text-slate-400 mt-1">{n.createdAt}</p>
                   </div>
 
-                  {isCoFollowPending && (
+                  {(isCoFollowPending || isTaskPending) && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={(e) => { e.stopPropagation(); respondToRequest(n.id, 'approved') }}
+                        onClick={(e) => { e.stopPropagation(); if (isTaskPending) handleApproveTask(n); else respondToRequest(n.id, 'approved') }}
                         className="p-1 text-emerald-500 hover:bg-emerald-50 rounded transition-colors"
                         title="同意"
                       >
                         <Check size={14} />
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); respondToRequest(n.id, 'rejected') }}
+                        onClick={(e) => { e.stopPropagation(); if (isTaskPending) setRejectingNotif(n); else respondToRequest(n.id, 'rejected') }}
                         className="p-1 text-red-400 hover:bg-red-50 rounded transition-colors"
                         title="拒绝"
                       >
@@ -143,6 +208,11 @@ export default function NotificationDropdown({ onClose }: Props) {
           })
         )}
       </div>
+      <TaskRejectModal
+        task={rejectingNotif ? { id: rejectingNotif.taskId || '', title: rejectingNotif.customerName } : null}
+        onConfirm={handleRejectTask}
+        onClose={() => setRejectingNotif(null)}
+      />
     </div>
   )
 }

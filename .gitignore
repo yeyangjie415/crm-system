@@ -5,3 +5,4 @@ crm-backend/prisma/*.db
 crm-backend/prisma/backups/
 crm-backend/.version
 installer/CRM-System-Setup*.exe
+crm-launcher/node_modules/

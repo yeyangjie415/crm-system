@@ -41,8 +41,8 @@ const baseInput: NewContractInput = {
   customerAttribute: 'company',
   isFirstContract: false,
   payments: [
-    { condition: '签约', amount: 140_000 },
-    { condition: '验收', amount: 140_000 },
+    { condition: '签约', amount: 140_000, completed: false },
+    { condition: '验收', amount: 140_000, completed: false },
   ],
 }
 
@@ -121,7 +121,7 @@ describe('ContractProvider', () => {
     act(() => {
       c = get().addContract({
         ...baseInput,
-        payments: [{ condition: '全款', amount: 280_000 }],
+        payments: [{ condition: '全款', amount: 280_000, completed: false }],
       })
     })
     const pmtId = c!.payments[0].id

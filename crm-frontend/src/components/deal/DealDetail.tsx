@@ -6,7 +6,7 @@ import { useCustomers } from '@/hooks/useCustomers'
 import { useUsers } from '@/hooks/useUsers'
 import { CUSTOMER_ATTRIBUTE_LABELS } from '@/types'
 import type { Contract } from '@/types'
-import { Pencil, Check, X, Building2, FileText, DollarSign, UserCog, ChevronDown } from 'lucide-react'
+import { Pencil, Check, X, Building2, FileText, DollarSign, ChevronDown } from 'lucide-react'
 
 interface Props {
   contract: Contract

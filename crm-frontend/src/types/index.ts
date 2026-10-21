@@ -29,6 +29,8 @@ export interface User {
   createdAt: string
   lastLogin?: string
   disabled: boolean
+  /** 直属主管（报销一级审核人） */
+  managerId?: string | null
 }
 
 export type CustomerType = 'owner' | 'integrator' | 'channel'
@@ -206,6 +208,8 @@ export interface Payment {
   voucherFile?: string
 }
 
+export type TaskStatus = 'pending' | 'submitted' | 'completed'
+
 export interface Task {
   id: string
   title: string
@@ -215,6 +219,8 @@ export interface Task {
   createdAt: string
   deadline: string
   completed: boolean
+  /** 任务状态机：pending 进行中 / submitted 待发件人确认 / completed 已完成 */
+  status: TaskStatus
   source: 'customer' | 'office' | 'contract'
   /** Optional deep-link: /customers/:id or /deals/:id or /office */
   linkTo?: string
@@ -231,17 +237,75 @@ export interface Visit {
   duration: number
 }
 
-export interface Expense {
-  id: string
-  date: string
+/* ---------------- 外勤费用报销（SOP 流程） ---------------- */
+
+export const EXPENSE_CATEGORIES = ['交通', '差旅', '住宿餐', '招待', '耗材', '杂费'] as const
+export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number]
+
+export type ExpenseStatus = 'pending_manager' | 'pending_finance' | 'pending_payment' | 'paid' | 'settled' | 'rejected'
+
+export const EXPENSE_STATUS_LABELS: Record<ExpenseStatus, string> = {
+  pending_manager: '待主管审核',
+  pending_finance: '待财务审核',
+  pending_payment: '审核通过，待打款',
+  paid: '已打款，待签收',
+  settled: '已核销，已办结',
+  rejected: '已驳回',
+}
+
+export interface ExpenseItem {
+  id?: string
   category: string
   amount: number
-  hasInvoice: boolean
-  project?: string
-  reason: string
-  notes?: string
-  status: 'pending' | 'approved' | 'paid' | 'confirmed'
-  submittedBy: string
+  date: string      // 消费日期
+  reason: string    // 消费事由
+}
+
+export interface ExpenseAttachment {
+  name: string
+  data: string      // base64 DataURL
+  uploadedAt: string
+}
+
+export interface ExpenseHistoryEntry {
+  action: string    // submit/manager_approve/manager_reject/finance_approve/finance_reject/pay/settle/resubmit
+  operatorId: string
+  operatorName: string
+  comment?: string
+  at: string
+}
+
+export const EXPENSE_ACTION_LABELS: Record<string, string> = {
+  submit: '提交申请',
+  manager_approve: '主管审核通过',
+  manager_reject: '主管驳回',
+  finance_approve: '财务审核通过',
+  finance_reject: '财务驳回',
+  pay: '财务打款',
+  settle: '申请人签收确认',
+  resubmit: '整改后重新提交',
+}
+
+export interface Expense {
+  id: string
+  customerId: string
+  customerName: string
+  visitId?: string | null
+  fieldworkDate: string
+  fieldworkLocation: string
+  workContent: string
+  notes?: string | null
+  totalAmount: number
+  status: ExpenseStatus
+  submittedById: string
+  submittedByName: string
+  rejectReason?: string | null
+  rejectedByStage?: 'manager' | 'finance' | null
+  statusHistory: ExpenseHistoryEntry[]
+  attachments: ExpenseAttachment[]
+  items: ExpenseItem[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface CommissionRule {
@@ -283,6 +347,10 @@ export type AuditAction =
   | 'hard_delete_customer' | 'restore_customer' | 'reassign_customer'
   | 'create_user' | 'edit_user' | 'delete_user' | 'toggle_disable_user'
   | 'edit_permissions' | 'change_password'
+  | 'expense_submit' | 'expense_edit' | 'expense_resubmit' | 'expense_delete'
+  | 'expense_manager_approve' | 'expense_manager_reject'
+  | 'expense_finance_approve' | 'expense_finance_reject'
+  | 'expense_pay' | 'expense_settle'
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   login: '登录', logout: '退出',
@@ -292,6 +360,11 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   create_user: '创建用户', edit_user: '编辑用户',
   delete_user: '删除用户', toggle_disable_user: '启用/禁用用户',
   edit_permissions: '修改权限配置', change_password: '修改密码',
+  expense_submit: '提交报销', expense_edit: '修改报销单', expense_resubmit: '重新提交报销',
+  expense_delete: '删除报销单',
+  expense_manager_approve: '报销一级审核通过', expense_manager_reject: '报销一级审核驳回',
+  expense_finance_approve: '报销财务审核通过', expense_finance_reject: '报销财务审核驳回',
+  expense_pay: '报销打款', expense_settle: '报销签收核销',
 }
 
 export interface AuditLogEntry {
@@ -299,7 +372,7 @@ export interface AuditLogEntry {
   userId: string
   userName: string
   action: AuditAction
-  targetType: 'customer' | 'user' | 'system'
+  targetType: 'customer' | 'user' | 'system' | 'expense'
   targetId?: string
   targetName?: string
   detail: string
@@ -315,6 +388,8 @@ export const CUSTOMER_ATTRIBUTE_LABELS: Record<CustomerAttribute, string> = {
 
 // 通知类型
 export type NotificationType = 'co_follow_request' | 'co_follow_approved' | 'co_follow_rejected' | 'contract_submitted' | 'contract_approved' | 'contract_rejected'
+  | 'expense_submitted' | 'expense_manager_approved' | 'expense_finance_approved' | 'expense_paid' | 'expense_rejected'
+  | 'task_submitted' | 'task_approved' | 'task_rejected'
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   co_follow_request: '申请共同跟进',
   co_follow_approved: '共同跟进已通过',
@@ -322,6 +397,14 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   contract_submitted: '合同审批提交',
   contract_approved: '合同已通过',
   contract_rejected: '合同已驳回',
+  expense_submitted: '报销单待审核',
+  expense_manager_approved: '报销单待财务审核',
+  expense_finance_approved: '报销审核通过',
+  expense_paid: '报销已打款',
+  expense_rejected: '报销被驳回',
+  task_submitted: '任务待确认',
+  task_approved: '任务已确认',
+  task_rejected: '任务被驳回',
 }
 
 export interface Notification {
@@ -336,6 +419,9 @@ export interface Notification {
   createdAt: string
   read: boolean
   contractId?: string
+  expenseId?: string
+  taskId?: string
+  comment?: string
 }
 
 // 省市区结构

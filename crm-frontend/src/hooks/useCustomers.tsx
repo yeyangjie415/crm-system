@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react'
 import type { Customer, FollowRecord, Contact, Project, CustomerType, CustomerPositioning, ReportStatus, FollowStatus, SharePermission, CustomerAttribute } from '@/types'
 import { generateId } from '@/mock/customers'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuditLog } from '@/hooks/useAuditLog'
+import { useBackendLoad } from '@/hooks/useBackendLoad'
 import { customersApi, followRecordsApi, isBackendAvailable } from '@/lib/api'
 
 export interface NewCustomerInput {
@@ -155,53 +156,31 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [followRecords, setFollowRecords] = useState<FollowRecord[]>([])
   const { logAction } = useAuditLog()
-  const { loginVersion } = useAuth()
+  const { loginVersion, user } = useAuth()
   const customersRef = useRef(customers)
   customersRef.current = customers
 
-  // Try to load from backend on mount and on re-login
-  useEffect(() => {
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-    const load = () => {
-      isBackendAvailable().then(ok => {
-        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
-        customersApi.list().then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setCustomers(data.map((c: any) => ({
-              ...c,
-              contacts: c.contacts || [],
-              projects: c.projects || [],
-              accessControl: c.accessControl || [],
-              annotations: c.annotations || [],
-              hiddenBy: c.hiddenBy || [],
-              deleted: c.deleted || false,
-            })))
-          }
-        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
-      })
-    }
-    load()
-    return () => clearTimeout(timer)
-  }, [loginVersion])
+  // Load from backend on mount and on re-login
+  useBackendLoad<Customer>(
+    () => customersApi.list().then(data => data.map((c: any) => ({
+      ...c,
+      contacts: c.contacts || [],
+      projects: c.projects || [],
+      accessControl: c.accessControl || [],
+      annotations: c.annotations || [],
+      hiddenBy: c.hiddenBy || [],
+      deleted: c.deleted || false,
+    }))),
+    setCustomers,
+    { trigger: loginVersion, loggedIn: !!user, clearOnLogout: true },
+  )
 
-  // Try to load followRecords from backend
-  useEffect(() => {
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-    const load = () => {
-      isBackendAvailable().then(ok => {
-        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
-        followRecordsApi.list().then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setFollowRecords(data.map((r: any) => ({ ...r })))
-          }
-        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
-      })
-    }
-    load()
-    return () => clearTimeout(timer)
-  }, [loginVersion])
+  // Load followRecords from backend
+  useBackendLoad<FollowRecord>(
+    () => followRecordsApi.list().then(data => data.map((r: any) => ({ ...r }))),
+    setFollowRecords,
+    { trigger: loginVersion, loggedIn: !!user, clearOnLogout: true },
+  )
 
   const getCustomer = useCallback((id: string) => {
     return customers.find(c => c.id === id && !c.deleted)

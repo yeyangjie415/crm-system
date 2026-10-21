@@ -3,6 +3,7 @@ import type { User, UserRole, PermissionLevel } from '@/types'
 import { generateId } from '@/mock/customers'
 import { usersApi, isBackendAvailable } from '@/lib/api'
 import { toast } from 'sonner'
+import { useBackendLoad } from '@/hooks/useBackendLoad'
 
 const USERS_STORAGE_KEY = 'crm_users'
 
@@ -38,6 +39,7 @@ export interface NewUserInput {
   password: string
   role: UserRole
   permissionLevel: PermissionLevel
+  managerId?: string | null
 }
 
 export interface UpdateUserInput {
@@ -46,50 +48,52 @@ export interface UpdateUserInput {
   password?: string
   role?: UserRole
   permissionLevel?: PermissionLevel
+  managerId?: string | null
 }
 
 interface UserContextType {
   users: User[]
+  getUser: (id: string) => User | undefined
   addUser: (input: NewUserInput) => User
   updateUser: (id: string, input: UpdateUserInput) => void
   deleteUser: (id: string) => void
   toggleDisable: (id: string) => void
+  /** Re-fetch the user list from the backend (called after a successful login). */
+  reloadUsers: () => void
 }
 
 const UserContext = createContext<UserContextType>({
   users: [],
+  getUser: () => undefined,
   addUser: () => ({ id: '', name: '', username: '', password: '', role: 'salesperson', permissionLevel: 'general', createdAt: '', disabled: false }),
   updateUser: () => {},
   deleteUser: () => {},
   toggleDisable: () => {},
+  reloadUsers: () => {},
 })
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>(() => loadPersistedUsers())
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
   }, [users])
 
-  // Load from backend on mount
-  useEffect(() => {
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-    const load = () => {
-      isBackendAvailable().then(ok => {
-        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
-        usersApi.list().then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            const merged = data.map((u: any) => ({ ...u, password: u.password || '' }))
-            setUsers(merged)
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged))
-          }
-        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
-      })
-    }
-    load()
-    return () => clearTimeout(timer)
-  }, [])
+  // Load from backend on mount / whenever reloadUsers() is called.
+  // UserProvider sits OUTSIDE AuthProvider (AuthProvider.login's offline
+  // fallback needs useUsers), so it can't read loginVersion — AuthProvider
+  // calls reloadUsers() after a successful backend login instead.
+  // No clearOnLogout: persisted users back the offline-fallback login.
+  useBackendLoad<User>(
+    () => usersApi.list().then(data => data.map((u: any) => ({ ...u, password: u.password || '' }))),
+    setUsers,
+    { trigger: reloadTick },
+  )
+
+  const reloadUsers = useCallback(() => setReloadTick(t => t + 1), [])
+
+  const getUser = useCallback((id: string) => users.find(u => u.id === id), [users])
 
   const addUser = useCallback((input: NewUserInput): User => {
     const newUser: User = {
@@ -101,6 +105,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       permissionLevel: input.permissionLevel,
       createdAt: new Date().toISOString().slice(0, 10),
       disabled: false,
+      managerId: input.managerId ?? null,
     }
     setUsers(prev => [...prev, newUser])
     isBackendAvailable().then(ok => {
@@ -122,6 +127,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         ...(input.password !== undefined && input.password !== '' && { password: input.password }),
         ...(input.role !== undefined && { role: input.role }),
         ...(input.permissionLevel !== undefined && { permissionLevel: input.permissionLevel }),
+        ...(input.managerId !== undefined && { managerId: input.managerId }),
       } : u
     ))
     isBackendAvailable().then(ok => {
@@ -161,7 +167,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [users])
 
   return (
-    <UserContext.Provider value={{ users, addUser, updateUser, deleteUser, toggleDisable }}>
+    <UserContext.Provider value={{ users, getUser, addUser, updateUser, deleteUser, toggleDisable, reloadUsers }}>
       {children}
     </UserContext.Provider>
   )

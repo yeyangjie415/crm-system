@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -10,6 +11,11 @@ interface GlassModalProps {
   className?: string
 }
 
+/**
+ * 通过 Portal 渲染到 document.body，避免被具有 backdrop-filter / filter /
+ * transform 的祖先（如 glass-card）创建包含块，导致 fixed 遮罩无法铺满全屏、
+ * 弹窗底部被页面其他内容遮挡。
+ */
 export default function GlassModal({ open, onClose, title, children, className }: GlassModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
 
@@ -27,7 +33,7 @@ export default function GlassModal({ open, onClose, title, children, className }
 
   if (!open) return null
 
-  return (
+  const modal = (
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm animate-in fade-in duration-200"
@@ -44,4 +50,6 @@ export default function GlassModal({ open, onClose, title, children, className }
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }

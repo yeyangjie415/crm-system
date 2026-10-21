@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM System Launcher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Draggable title bar -->
+  <div class="titlebar" id="titlebar">
+    <div class="titlebar-left">
+      <svg class="titlebar-icon" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
+        <path d="M9 22v-4h6v4"/>
+        <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>
+      </svg>
+      <span class="titlebar-text">CRM System v1.2</span>
+    </div>
+    <div class="titlebar-actions">
+      <button class="titlebar-btn" id="minimizeBtn" title="最小化">─</button>
+      <button class="titlebar-btn titlebar-close" id="closeBtn" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+    <!-- Status banner -->
+    <div class="status-banner" id="statusBanner">
+      <div class="status-indicator" id="statusDot">●</div>
+      <div class="status-texts">
+        <div class="status-title" id="statusTitle">正在启动...</div>
+        <div class="status-url" id="statusUrl">http://localhost:5173</div>
+      </div>
+    </div>
+
+    <!-- Service cards -->
+    <div class="cards-row">
+      <div class="service-card" id="backendCard">
+        <div class="card-header">
+          <span class="card-dot" id="backendDot">●</span>
+          <span class="card-label">后端服务</span>
+        </div>
+        <div class="card-status" id="backendStatus">检测中...</div>
+        <div class="card-port" id="backendPort">:3001</div>
+        <button class="card-btn" onclick="electronAPI.restartBackend()" id="backendRestartBtn">重启</button>
+      </div>
+
+      <div class="service-card" id="frontendCard">
+        <div class="card-header">
+          <span class="card-dot" id="frontendDot">●</span>
+          <span class="card-label">前端服务</span>
+        </div>
+        <div class="card-status" id="frontendStatus">检测中...</div>
+        <div class="card-port" id="frontendPort">:5173</div>
+        <button class="card-btn" onclick="electronAPI.restartFrontend()" id="frontendRestartBtn">重启</button>
+      </div>
+    </div>
+
+    <!-- Bottom section -->
+    <div class="bottom-section">
+      <div class="auto-start-row">
+        <span class="auto-start-label">开机自启</span>
+        <button class="toggle-btn" id="autoStartToggle" onclick="toggleAutoStart()">
+          <span class="toggle-thumb" id="autoStartThumb"></span>
+        </button>
+      </div>
+
+      <div class="ip-row" id="ipRow">
+        <span class="ip-label">访问地址</span>
+        <span class="ip-value" id="ipValue">127.0.0.1</span>
+      </div>
+
+      <div class="action-row">
+        <button class="action-btn primary" id="openBrowserBtn">打开浏览器</button>
+        <button class="action-btn secondary" id="closeBtn" onclick="window.close()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

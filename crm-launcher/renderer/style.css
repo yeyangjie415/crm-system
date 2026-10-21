@@ -1,0 +1,149 @@
+/* ── Global ── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: transparent;
+  color: #1e293b;
+  overflow: hidden;
+  user-select: none;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Title Bar ── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  -webkit-app-region: drag;
+}
+.titlebar-left { display: flex; align-items: center; gap: 10px; }
+.titlebar-icon { width: 22px; height: 22px; }
+.titlebar-text { font-size: 13px; font-weight: 600; color: #1e293b; }
+.titlebar-actions { display: flex; gap: 6px; -webkit-app-region: no-drag; }
+.titlebar-btn {
+  width: 28px; height: 28px; border: none; background: transparent;
+  border-radius: 6px; cursor: pointer; font-size: 14px;
+  color: #94a3b8; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.titlebar-btn:hover { background: #f1f5f9; color: #475569; }
+.titlebar-close:hover { background: #fee2e2; color: #ef4444; }
+
+/* ── Content ── */
+.content {
+  flex: 1;
+  padding: 0 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Status Banner ── */
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.status-indicator { font-size: 28px; transition: color 0.3s; }
+.status-texts { display: flex; flex-direction: column; gap: 2px; }
+.status-title { font-size: 15px; font-weight: 600; }
+.status-url { font-size: 11px; color: #64748b; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Service Cards ── */
+.cards-row { display: flex; gap: 12px; }
+.service-card {
+  flex: 1;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-header { display: flex; align-items: center; gap: 6px; }
+.card-dot { font-size: 14px; transition: color 0.3s; }
+.card-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; }
+.card-status { font-size: 13px; font-weight: 500; margin: 2px 0; }
+.card-port { font-size: 10px; color: #94a3b8; font-family: 'JetBrains Mono', monospace; }
+.card-btn {
+  margin-top: 6px;
+  padding: 5px 0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f1f5f9;
+  color: #475569;
+  transition: background 0.15s;
+}
+.card-btn:hover { background: #e2e8f0; }
+
+/* ── Bottom Section ── */
+.bottom-section {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auto-start-row { display: flex; align-items: center; justify-content: space-between; }
+.auto-start-label { font-size: 12px; color: #475569; }
+
+/* Toggle */
+.toggle-btn {
+  position: relative;
+  width: 40px; height: 22px;
+  border-radius: 11px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: #cbd5e1;
+}
+.toggle-btn.active { background: #3b82f6; }
+.toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.2s;
+}
+.toggle-btn.active .toggle-thumb { transform: translateX(18px); }
+
+.ip-row { display: flex; align-items: center; justify-content: space-between; }
+.ip-label { font-size: 12px; color: #475569; }
+.ip-value { font-size: 11px; color: #3b82f6; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+.action-row { display: flex; gap: 8px; }
+.action-btn {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.action-btn.primary { background: #3b82f6; color: white; }
+.action-btn.primary:hover { background: #2563eb; }
+.action-btn.secondary { background: #f1f5f9; color: #475569; }
+.action-btn.secondary:hover { background: #e2e8f0; }

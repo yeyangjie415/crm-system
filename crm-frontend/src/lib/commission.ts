@@ -199,11 +199,8 @@ export function computeBreakdown(
   techPersonName: string,
 ): CommissionBreakdown[] {
   const total = contracts.reduce((sum, c) => sum + c.settlementAmount, 0)
-  const { quarterlyTotal: qt, quarterlyPersonal: qp, quarterlyCompany: qc } =
-    computeQuarterlyCommissions(contracts, params)
   const fixed = enabled.fixedBonus ? computeFixedBonus(total, params).bonus : 0
   const floating = enabled.floating ? computeFloatingBonus(total, params).bonus : 0
-  const nc = computeNewCustomerBonus(contracts, params)
 
   return contracts.map(c => {
     const share = total > 0 ? c.settlementAmount / total : 0

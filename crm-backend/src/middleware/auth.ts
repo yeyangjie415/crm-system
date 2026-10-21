@@ -17,7 +17,8 @@ declare global {
 }
 
 export function generateToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' })
+  // Matches the frontend promise "记住登录（30天有效）"
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' })
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {

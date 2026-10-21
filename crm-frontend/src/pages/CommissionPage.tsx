@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Calculator, Send } from 'lucide-react'
+import { Send } from 'lucide-react'
 import GlassPanel from '@/components/glass/GlassPanel'
 import GlassModal from '@/components/glass/GlassModal'
 import CommissionTable from '@/components/commission/CommissionTable'
@@ -11,7 +11,7 @@ import type { Contract } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function CommissionPage() {
-  const { user, isSuperAdmin } = useAuth()
+  const { isSuperAdmin } = useAuth()
   const navigate = useNavigate()
 
   // Only super admin can access this page

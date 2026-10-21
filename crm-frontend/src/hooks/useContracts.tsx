@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { generateId } from '@/mock/customers'
 import { contractsApi, isBackendAvailable } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { useBackendLoad } from '@/hooks/useBackendLoad'
 import type { Contract, Payment, ArchivedFileCategory, ArchivedFile } from '@/types'
 
 export interface NewContractInput {
@@ -108,30 +109,19 @@ function buildContract(input: NewContractInput, id?: string): Contract {
 
 export function ContractProvider({ children }: { children: ReactNode }) {
   const [contracts, setContracts] = useState<Contract[]>([])
-  const { loginVersion } = useAuth()
+  const { loginVersion, user } = useAuth()
 
-  // Try to load from backend on mount
-  useEffect(() => {
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-    const load = () => {
-      isBackendAvailable().then(ok => {
-        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
-        contractsApi.list().then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setContracts(data.map((c: any) => ({
-              ...c,
-              payments: c.payments || [],
-              archivedFiles: c.archivedFiles || [],
-              processFiles: c.processFiles || [],
-            })))
-          }
-        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
-      })
-    }
-    load()
-    return () => clearTimeout(timer)
-  }, [loginVersion])
+  // Load from backend on mount and on re-login
+  useBackendLoad<Contract>(
+    () => contractsApi.list().then(data => data.map((c: any) => ({
+      ...c,
+      payments: c.payments || [],
+      archivedFiles: c.archivedFiles || [],
+      processFiles: c.processFiles || [],
+    }))),
+    setContracts,
+    { trigger: loginVersion, loggedIn: !!user, clearOnLogout: true },
+  )
 
   const addContract = useCallback((input: NewContractInput): Contract => {
     const newContract = buildContract(input)

@@ -10,7 +10,7 @@ import { isSuperAdmin, isCreator } from '@/lib/permissions'
 import type { Customer, RegionValue } from '@/types'
 import { CUSTOMER_TYPE_LABELS, CUSTOMER_POSITIONING_LABELS, CUSTOMER_ATTRIBUTE_LABELS, SHARE_PERMISSION_LABELS } from '@/types'
 import type { CustomerType, CustomerPositioning, CustomerAttribute } from '@/types'
-import { Building2, MapPin, Share2, Pencil, X, Check, UserCog, ChevronDown } from 'lucide-react'
+import { Building2, MapPin, Share2, Pencil, X, Check, ChevronDown } from 'lucide-react'
 
 interface CustomerInfoProps {
   customer: Customer

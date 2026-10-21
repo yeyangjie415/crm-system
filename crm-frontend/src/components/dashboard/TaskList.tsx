@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { Check, Clock, ExternalLink } from 'lucide-react'
@@ -7,6 +7,8 @@ import { useTasks } from '@/hooks/useTasks'
 import { useCustomers } from '@/hooks/useCustomers'
 import { useAuth } from '@/hooks/useAuth'
 import { getDeadlineLabel } from '@/lib/utils'
+import TaskSubmitConfirmModal from '@/components/office/TaskSubmitConfirmModal'
+import TaskRejectModal from '@/components/office/TaskRejectModal'
 import type { Task } from '@/types'
 
 interface PlanItem {
@@ -40,9 +42,11 @@ function getSourceLabel(source: Task['source']) {
 
 export default function TaskList() {
   const { user, isAdmin } = useAuth()
-  const { tasks: allTasks, updateTask } = useTasks()
+  const { tasks: allTasks, submitTask, approveTask, rejectTask } = useTasks()
   const { customers, followRecords, deleteFollowRecord } = useCustomers()
   const navigate = useNavigate()
+  const [confirmTask, setConfirmTask] = useState<Task | null>(null)
+  const [rejectingTask, setRejectingTask] = useState<Task | null>(null)
 
   /* ---- Filter tasks by user permission ---- */
   const tasks = useMemo(() =>
@@ -83,10 +87,7 @@ export default function TaskList() {
       })
   }, [customers, followRecords])
 
-  const handleComplete = (taskId: string) => {
-    updateTask(taskId, { completed: true })
-    toast.success('任务已完成')
-  }
+  const handleComplete = (task: Task) => submitTask(task.id)
 
   const handlePlanComplete = (planId: string) => {
     const recordId = planId.replace(/^plan-/, '')
@@ -120,15 +121,24 @@ export default function TaskList() {
           {activeTasks.map(task => {
             const deadline = getDeadlineLabel(task.deadline)
             const source = getSourceLabel(task.source)
+            const isSubmitted = task.status === 'submitted'
+            const reviewable = isSubmitted && (task.assignedBy === user?.name || isAdmin)
             return (
-              <div key={task.id} className="table-row w-full p-2.5 rounded-lg border border-black/3 bg-white/40">
+              <div key={task.id} className={`table-row w-full p-2.5 rounded-lg border ${isSubmitted ? 'border-amber-200 bg-amber-50/30' : 'border-black/3 bg-white/40'}`}>
                 <div className="flex items-center gap-3 w-full">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleComplete(task.id) }}
-                    className="w-5 h-5 rounded-md border-2 border-slate-200 flex items-center justify-center shrink-0 interactive hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
-                  >
-                    <Check size={12} className="text-emerald-500 opacity-0 hover:opacity-100" />
-                  </button>
+                  {isSubmitted ? (
+                    <span className="w-5 h-5 rounded-md border-2 border-amber-300 bg-amber-50 flex items-center justify-center shrink-0 cursor-not-allowed" title="待发件人确认">
+                      <Clock size={11} className="text-amber-500" />
+                    </span>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmTask(task) }}
+                      className="w-5 h-5 rounded-md border-2 border-slate-200 flex items-center justify-center shrink-0 interactive hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
+                      title="提交完成"
+                    >
+                      <Check size={12} className="text-emerald-500 opacity-0 hover:opacity-100" />
+                    </button>
+                  )}
                   <div
                     className="flex-1 min-w-0 cursor-pointer group"
                     onClick={() => handleNavigate(task)}
@@ -147,11 +157,29 @@ export default function TaskList() {
                     <ExternalLink size={12} />
                   </button>
                   <div className="flex items-center gap-2 shrink-0 ml-auto">
+                    {reviewable && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); approveTask(task.id) }}
+                          className="text-[9px] text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded font-medium interactive"
+                          title="同意完成"
+                        >
+                          同意
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setRejectingTask(task) }}
+                          className="text-[9px] text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 px-1.5 py-0.5 rounded font-medium interactive"
+                          title="驳回完成申请"
+                        >
+                          驳回
+                        </button>
+                      </div>
+                    )}
                     <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${source.color}`}>
                       {source.label}
                     </span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap flex items-center gap-1 ${deadline.color}`}>
-                      <Clock size={9} />{deadline.label}
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap flex items-center gap-1 ${isSubmitted ? 'text-amber-600 bg-amber-100' : deadline.color}`}>
+                      <Clock size={9} />{isSubmitted ? '待发件人确认' : deadline.label}
                     </span>
                   </div>
                 </div>
@@ -207,6 +235,8 @@ export default function TaskList() {
           ))}
         </div>
       )}
+      <TaskSubmitConfirmModal task={confirmTask} onConfirm={handleComplete} onClose={() => setConfirmTask(null)} />
+      <TaskRejectModal task={rejectingTask} onConfirm={(task, reason) => rejectTask(task.id, reason)} onClose={() => setRejectingTask(null)} />
     </GlassCard>
   )
 }

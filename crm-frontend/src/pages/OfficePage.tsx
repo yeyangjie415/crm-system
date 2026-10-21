@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Plus, Send, Clock, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import GlassCard from '@/components/glass/GlassCard'
-import GlassPanel from '@/components/glass/GlassPanel'
 import OfficeTaskList from '@/components/office/OfficeTaskList'
 import OfficeTaskForm from '@/components/office/OfficeTaskForm'
 import { useTasks } from '@/hooks/useTasks'
@@ -18,13 +17,14 @@ export default function OfficePage() {
 
   const activeCount = tasks.filter(t => !t.completed).length
   const doneCount = tasks.filter(t => t.completed).length
+  const pendingConfirmCount = tasks.filter(t => t.status === 'submitted').length
 
   return (
     <div>
       <h1 className="text-xl font-bold text-slate-800 font-display mb-1">协同办公</h1>
       <p className="text-xs text-slate-400 mb-5">任务分发与协作</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <GlassCard className="flex items-center gap-3 p-3">
           <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
             <Send size={14} className="text-blue-500" />
@@ -41,6 +41,15 @@ export default function OfficePage() {
           <div>
             <p className="text-[9px] text-slate-400">待处理</p>
             <p className="text-lg font-mono font-bold text-slate-800">{activeCount}</p>
+          </div>
+        </GlassCard>
+        <GlassCard className="flex items-center gap-3 p-3">
+          <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+            <Clock size={14} className="text-orange-500" />
+          </div>
+          <div>
+            <p className="text-[9px] text-slate-400">待发件人确认</p>
+            <p className="text-lg font-mono font-bold text-slate-800">{pendingConfirmCount}</p>
           </div>
         </GlassCard>
         <GlassCard className="flex items-center gap-3 p-3">

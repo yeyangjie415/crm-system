@@ -1,102 +1,149 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
-import type { Expense } from '@/types'
-import { generateId } from '@/mock/customers'
-import { expensesApi, isBackendAvailable } from '@/lib/api'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import type { Expense, ExpenseItem, ExpenseAttachment } from '@/types'
+import { expensesApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
+import { useBackendLoad } from '@/hooks/useBackendLoad'
 
 export interface NewExpenseInput {
-  date: string
-  category: string
-  amount: number
-  hasInvoice: boolean
-  project?: string
-  reason: string
+  customerId: string
+  customerName: string
+  visitId?: string | null
+  fieldworkDate: string
+  fieldworkLocation: string
+  workContent: string
   notes?: string
-  submittedBy: string
+  items: ExpenseItem[]
+  attachments: ExpenseAttachment[]
 }
 
 interface ExpenseContextType {
   expenses: Expense[]
-  addExpense: (input: NewExpenseInput) => Expense
-  updateExpense: (id: string, input: Partial<Expense>) => void
-  deleteExpense: (id: string) => void
+  addExpense: (input: NewExpenseInput) => Promise<void>
+  updateExpense: (id: string, input: NewExpenseInput) => Promise<void>
+  deleteExpense: (id: string) => Promise<void>
+  managerReview: (id: string, approved: boolean, comment?: string) => Promise<void>
+  financeReview: (id: string, approved: boolean, comment?: string) => Promise<void>
+  payExpense: (id: string, comment?: string) => Promise<void>
+  settleExpense: (id: string) => Promise<void>
+  refresh: () => Promise<void>
 }
 
 const ExpenseContext = createContext<ExpenseContextType>({
   expenses: [],
-  addExpense: () => ({ id: '', date: '', category: '', amount: 0, hasInvoice: false, reason: '', status: 'pending', submittedBy: '' }),
-  updateExpense: () => {},
-  deleteExpense: () => {},
+  addExpense: async () => {},
+  updateExpense: async () => {},
+  deleteExpense: async () => {},
+  managerReview: async () => {},
+  financeReview: async () => {},
+  payExpense: async () => {},
+  settleExpense: async () => {},
+  refresh: async () => {},
 })
+
+function errMsg(err: any): string {
+  return err?.message || '网络错误'
+}
 
 export function ExpenseProvider({ children }: { children: ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const { loginVersion } = useAuth()
+  const { loginVersion, user } = useAuth()
 
-  useEffect(() => {
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-    const load = () => {
-      isBackendAvailable().then(ok => {
-        if (!ok) { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000); return }
-        expensesApi.list().then(data => {
-          if (Array.isArray(data) && data.length > 0) setExpenses(data)
-        }).catch(() => { attempts++; if (attempts <= 6) timer = setTimeout(load, 5000) })
-      })
+  // Load from backend on mount and on re-login（服务端按权限返回可见单据）
+  const loader = useCallback(
+    () => expensesApi.list().then((data: any[]) => data.map((e: any) => ({ ...e }))),
+    [],
+  )
+  useBackendLoad<Expense>(loader, setExpenses, {
+    trigger: loginVersion,
+    loggedIn: !!user,
+    clearOnLogout: true,
+  })
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await expensesApi.list()
+      setExpenses(data.map((e: any) => ({ ...e })))
+    } catch (err) {
+      console.error('[API]', err)
     }
-    load()
-    return () => clearTimeout(timer)
-  }, [loginVersion])
+  }, [])
 
-  const addExpense = useCallback((input: NewExpenseInput): Expense => {
-    const newExpense: Expense = {
-      id: generateId('e'),
-      date: input.date,
-      category: input.category,
-      amount: input.amount,
-      hasInvoice: input.hasInvoice,
-      project: input.project,
-      reason: input.reason,
-      notes: input.notes,
-      status: 'pending',
-      submittedBy: input.submittedBy,
+  const addExpense = useCallback(async (input: NewExpenseInput) => {
+    try {
+      await expensesApi.create(input)
+      await refresh()
+    } catch (err) {
+      toast.error('提交失败：' + errMsg(err))
+      throw err
     }
-    setExpenses(prev => [...prev, newExpense])
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      expensesApi.create(newExpense).catch(err => {
-        console.error('[API]', err)
-        toast.error('保存失败：' + (err?.message || '网络错误'))
-      })
-    })
-    return newExpense
-  }, [])
+  }, [refresh])
 
-  const updateExpense = useCallback((id: string, input: Partial<Expense>) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...input } : e))
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      expensesApi.update(id, input).catch(err => {
-        console.error('[API]', err)
-        toast.error('保存失败：' + (err?.message || '网络错误'))
-      })
-    })
-  }, [])
+  const updateExpense = useCallback(async (id: string, input: NewExpenseInput) => {
+    try {
+      await expensesApi.update(id, input)
+      await refresh()
+    } catch (err) {
+      toast.error('保存失败：' + errMsg(err))
+      throw err
+    }
+  }, [refresh])
 
-  const deleteExpense = useCallback((id: string) => {
-    setExpenses(prev => prev.filter(e => e.id !== id))
-    isBackendAvailable().then(ok => {
-      if (!ok) return
-      expensesApi.delete(id).catch(err => {
-        console.error('[API]', err)
-        toast.error('保存失败：' + (err?.message || '网络错误'))
-      })
-    })
-  }, [])
+  const deleteExpense = useCallback(async (id: string) => {
+    try {
+      await expensesApi.delete(id)
+      await refresh()
+    } catch (err) {
+      toast.error('删除失败：' + errMsg(err))
+      throw err
+    }
+  }, [refresh])
+
+  const managerReview = useCallback(async (id: string, approved: boolean, comment?: string) => {
+    try {
+      await expensesApi.managerReview(id, approved, comment)
+      await refresh()
+    } catch (err) {
+      toast.error('操作失败：' + errMsg(err))
+      throw err
+    }
+  }, [refresh])
+
+  const financeReview = useCallback(async (id: string, approved: boolean, comment?: string) => {
+    try {
+      await expensesApi.financeReview(id, approved, comment)
+      await refresh()
+    } catch (err) {
+      toast.error('操作失败：' + errMsg(err))
+      throw err
+    }
+  }, [refresh])
+
+  const payExpense = useCallback(async (id: string, comment?: string) => {
+    try {
+      await expensesApi.pay(id, comment)
+      await refresh()
+    } catch (err) {
+      toast.error('操作失败：' + errMsg(err))
+      throw err
+    }
+  }, [refresh])
+
+  const settleExpense = useCallback(async (id: string) => {
+    try {
+      await expensesApi.settle(id)
+      await refresh()
+    } catch (err) {
+      toast.error('操作失败：' + errMsg(err))
+      throw err
+    }
+  }, [refresh])
 
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, updateExpense, deleteExpense }}>
+    <ExpenseContext.Provider value={{
+      expenses, addExpense, updateExpense, deleteExpense,
+      managerReview, financeReview, payExpense, settleExpense, refresh,
+    }}>
       {children}
     </ExpenseContext.Provider>
   )

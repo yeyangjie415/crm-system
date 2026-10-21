@@ -149,6 +149,7 @@ export default function SettingsPage() {
                     <th className="text-left py-2 px-3">用户名</th>
                     <th className="text-left py-2 px-3">角色</th>
                     <th className="text-left py-2 px-3">权限等级</th>
+                    <th className="text-left py-2 px-3 hidden sm:table-cell">直属主管</th>
                     <th className="text-left py-2 px-3 hidden sm:table-cell">状态</th>
                     <th className="text-left py-2 px-3 hidden md:table-cell">最后登录</th>
                     <th className="text-right py-2 px-3">操作</th>
@@ -174,6 +175,9 @@ export default function SettingsPage() {
                           }`}>
                             {PERMISSION_LEVEL_LABELS[u.permissionLevel] ?? u.permissionLevel}
                           </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-500 hidden sm:table-cell">
+                          {u.managerId ? (users.find(m => m.id === u.managerId)?.name || '—') : <span className="text-slate-300">未指定</span>}
                         </td>
                         <td className="py-2.5 px-3 hidden sm:table-cell">
                           <span className={`inline-flex items-center gap-1 text-[10px] ${u.disabled ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -323,7 +327,7 @@ export default function SettingsPage() {
                         reader.onerror = reject
                         reader.readAsDataURL(file)
                       })
-                      const result = await systemApi.restore(base64)
+                      await systemApi.restore(base64)
                       toast.success('数据库已恢复，请重启服务', { id: 'restore' })
                     } catch {
                       toast.error('恢复失败', { id: 'restore' })

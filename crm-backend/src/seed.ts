@@ -8,13 +8,14 @@ async function main() {
 
   // ── Users ──
   const password = await bcrypt.hash('admin123', 10)
+  // managerId: 直属主管（报销一级审核人）
   const users = [
-    { id: '1', name: '张管理', username: 'admin', password, role: 'general_manager', permissionLevel: 'super_admin', createdAt: '2024-01-01', lastLogin: '2026-07-03', disabled: false },
-    { id: '2', name: '李销售', username: 'sales', password, role: 'salesperson', permissionLevel: 'general', createdAt: '2024-01-15', lastLogin: '2026-07-03', disabled: false },
-    { id: '3', name: '王技术', username: 'tech', password, role: 'technician', permissionLevel: 'general', createdAt: '2024-02-01', lastLogin: '2026-07-01', disabled: false },
-    { id: '4', name: '赵财务', username: 'finance', password, role: 'finance', permissionLevel: 'general', createdAt: '2024-03-01', lastLogin: '2026-07-02', disabled: false },
-    { id: '5', name: '陈助理', username: 'assistant', password, role: 'sales_assistant', permissionLevel: 'admin', createdAt: '2024-04-01', lastLogin: '2026-06-30', disabled: false },
-    { id: '6', name: '刘销售', username: 'sales2', password, role: 'salesperson', permissionLevel: 'general', createdAt: '2024-05-01', lastLogin: '2026-07-03', disabled: false },
+    { id: '1', name: '张管理', username: 'admin', password, role: 'general_manager', permissionLevel: 'super_admin', createdAt: '2024-01-01', lastLogin: '2026-07-03', disabled: false, managerId: null },
+    { id: '2', name: '李销售', username: 'sales', password, role: 'salesperson', permissionLevel: 'general', createdAt: '2024-01-15', lastLogin: '2026-07-03', disabled: false, managerId: '1' },
+    { id: '3', name: '王技术', username: 'tech', password, role: 'technician', permissionLevel: 'general', createdAt: '2024-02-01', lastLogin: '2026-07-01', disabled: false, managerId: '1' },
+    { id: '4', name: '赵财务', username: 'finance', password, role: 'finance', permissionLevel: 'general', createdAt: '2024-03-01', lastLogin: '2026-07-02', disabled: false, managerId: null },
+    { id: '5', name: '陈助理', username: 'assistant', password, role: 'sales_assistant', permissionLevel: 'admin', createdAt: '2024-04-01', lastLogin: '2026-06-30', disabled: false, managerId: '1' },
+    { id: '6', name: '刘销售', username: 'sales2', password, role: 'salesperson', permissionLevel: 'general', createdAt: '2024-05-01', lastLogin: '2026-07-03', disabled: false, managerId: '5' },
   ]
   for (const u of users) {
     await prisma.user.upsert({ where: { id: u.id }, update: u, create: u })
@@ -237,19 +238,136 @@ async function main() {
   }
   console.log(`  ✓ ${contracts.length} contracts`)
 
-  // ── Expenses ──
+  // ── Expenses（外勤费用报销，SOP 新流程：两级审核 + 明细 + 票据）──
+  // 占位票据：1×1 png base64
+  const RECEIPT = JSON.stringify([{ name: '票据凭证.png', data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', uploadedAt: '2026-07-03 10:00' }])
   const expenses = [
-    { id: 'e1', date: '2026-06-15', category: '差旅', amount: 2800, hasInvoice: true, project: 'ERP系统部署', reason: '拜访华科信息技术周总', notes: '高铁往返+住宿一晚', status: 'approved', submittedBy: '李销售' },
-    { id: 'e2', date: '2026-06-20', category: '招待', amount: 1500, hasInvoice: true, project: '数据平台建设', reason: '宴请鼎新科技决策团队', status: 'paid', submittedBy: '李销售' },
-    { id: 'e3', date: '2026-06-25', category: '交通', amount: 320, hasInvoice: false, project: '智慧园区项目', reason: '市内考察园区现场', notes: '出租车', status: 'approved', submittedBy: '刘销售' },
-    { id: 'e4', date: '2026-06-28', category: '办公', amount: 850, hasInvoice: true, reason: '采购办公用品', notes: '打印纸、墨盒、文件夹', status: 'pending', submittedBy: '李销售' },
-    { id: 'e5', date: '2026-07-01', category: '差旅', amount: 4200, hasInvoice: true, project: 'AI算力平台', reason: '杭州出差拜访中科云智陈博士', notes: '机票+住宿2晚', status: 'pending', submittedBy: '刘销售' },
-    { id: 'e6', date: '2026-07-02', category: '招待', amount: 2200, hasInvoice: true, project: '安防监控系统', reason: '远航集团高管接待', status: 'paid', submittedBy: '刘销售' },
-    { id: 'e7', date: '2026-06-18', category: '交通', amount: 180, hasInvoice: false, reason: '市内拜访客户', notes: '地铁+共享单车', status: 'paid', submittedBy: '王技术' },
-    { id: 'e8', date: '2026-06-22', category: '其他', amount: 600, hasInvoice: true, reason: '技术培训报名费', notes: '云计算认证考试', status: 'confirmed', submittedBy: '王技术' },
+    {
+      // 待主管审核（李销售，关联拜访 v1）
+      id: 'e1', customerId: 'c1', customerName: '华科信息技术有限公司', visitId: 'v1',
+      fieldworkDate: '2026-07-01', fieldworkLocation: '深圳市南山区科技园', workContent: '拜访华科信息周总，沟通ERP系统部署方案与数据迁移细节',
+      notes: null, totalAmount: 680, status: 'pending_manager', submittedById: '2', submittedByName: '李销售',
+      rejectReason: null, rejectedByStage: null,
+      statusHistory: JSON.stringify([{ action: 'submit', operatorId: '2', operatorName: '李销售', at: '2026-07-03 09:30' }]),
+      attachments: RECEIPT, createdAt: '2026-07-03 09:30', updatedAt: '2026-07-03 09:30',
+      items: [
+        { id: 'ei1', category: '交通', amount: 360, date: '2026-07-01', reason: '高铁往返深圳北站' },
+        { id: 'ei2', category: '住宿餐', amount: 320, date: '2026-07-01', reason: '客户现场工作午餐及市内交通' },
+      ],
+    },
+    {
+      // 待主管审核（刘销售）
+      id: 'e2', customerId: 'c9', customerName: '天宇智能科技有限公司', visitId: null,
+      fieldworkDate: '2026-07-03', fieldworkLocation: '深圳市福田区', workContent: '与林总高层会面前现场勘查智慧园区项目点位',
+      notes: '招待费用含客户方3人，超常规标准部分已提前向部门报备', totalAmount: 1280, status: 'pending_manager', submittedById: '6', submittedByName: '刘销售',
+      rejectReason: null, rejectedByStage: null,
+      statusHistory: JSON.stringify([{ action: 'submit', operatorId: '6', operatorName: '刘销售', at: '2026-07-04 11:00' }]),
+      attachments: RECEIPT, createdAt: '2026-07-04 11:00', updatedAt: '2026-07-04 11:00',
+      items: [{ id: 'ei3', category: '招待', amount: 1280, date: '2026-07-03', reason: '工作晚餐招待客户项目负责人' }],
+    },
+    {
+      // 待财务审核（李销售，主管已通过，关联拜访 v7）
+      id: 'e3', customerId: 'c2', customerName: '鼎新科技有限公司', visitId: 'v7',
+      fieldworkDate: '2026-06-28', fieldworkLocation: '北京市海淀区中关村', workContent: '赴鼎新科技进行数据平台建设合同签署前商务洽谈',
+      notes: null, totalAmount: 2150, status: 'pending_finance', submittedById: '2', submittedByName: '李销售',
+      rejectReason: null, rejectedByStage: null,
+      statusHistory: JSON.stringify([
+        { action: 'submit', operatorId: '2', operatorName: '李销售', at: '2026-06-29 09:00' },
+        { action: 'manager_approve', operatorId: '1', operatorName: '张管理', comment: '外勤属实，费用合理', at: '2026-06-29 14:00' },
+      ]),
+      attachments: RECEIPT, createdAt: '2026-06-29 09:00', updatedAt: '2026-06-29 14:00',
+      items: [
+        { id: 'ei4', category: '差旅', amount: 1650, date: '2026-06-28', reason: '北京往返机票' },
+        { id: 'ei5', category: '交通', amount: 500, date: '2026-06-28', reason: '机场往返及市内出行' },
+      ],
+    },
+    {
+      // 审核通过待打款（刘销售，两级审核均已通过，关联拜访 v4）
+      id: 'e4', customerId: 'c5', customerName: '中科云智科技有限公司', visitId: 'v4',
+      fieldworkDate: '2026-07-02', fieldworkLocation: '杭州市余杭区未来科技城', workContent: '赴杭州与陈博士进行AI算力平台需求确认与技术交流',
+      notes: null, totalAmount: 4200, status: 'pending_payment', submittedById: '6', submittedByName: '刘销售',
+      rejectReason: null, rejectedByStage: null,
+      statusHistory: JSON.stringify([
+        { action: 'submit', operatorId: '6', operatorName: '刘销售', at: '2026-07-03 08:30' },
+        { action: 'manager_approve', operatorId: '5', operatorName: '陈助理', comment: '出差行程与拜访记录一致', at: '2026-07-03 10:00' },
+        { action: 'finance_approve', operatorId: '4', operatorName: '赵财务', comment: '票据合规，金额无误', at: '2026-07-03 15:00' },
+      ]),
+      attachments: RECEIPT, createdAt: '2026-07-03 08:30', updatedAt: '2026-07-03 15:00',
+      items: [
+        { id: 'ei6', category: '差旅', amount: 3200, date: '2026-07-02', reason: '机票及住宿2晚' },
+        { id: 'ei7', category: '住宿餐', amount: 600, date: '2026-07-02', reason: '出差期间餐费' },
+        { id: 'ei8', category: '交通', amount: 400, date: '2026-07-02', reason: '杭州当地出行' },
+      ],
+    },
+    {
+      // 已打款待签收（王技术，上门服务）
+      id: 'e5', customerId: 'c4', customerName: '明辉电子有限公司', visitId: null,
+      fieldworkDate: '2026-06-30', fieldworkLocation: '广州市天河区', workContent: '明辉电子机房现场运维及网络设备巡检',
+      notes: null, totalAmount: 560, status: 'paid', submittedById: '3', submittedByName: '王技术',
+      rejectReason: null, rejectedByStage: null,
+      statusHistory: JSON.stringify([
+        { action: 'submit', operatorId: '3', operatorName: '王技术', at: '2026-07-01 09:00' },
+        { action: 'manager_approve', operatorId: '1', operatorName: '张管理', comment: '同意', at: '2026-07-01 11:00' },
+        { action: 'finance_approve', operatorId: '4', operatorName: '赵财务', comment: '审核通过', at: '2026-07-01 16:00' },
+        { action: 'pay', operatorId: '4', operatorName: '赵财务', comment: '已随7月第一批次打款', at: '2026-07-02 10:00' },
+      ]),
+      attachments: RECEIPT, createdAt: '2026-07-01 09:00', updatedAt: '2026-07-02 10:00',
+      items: [
+        { id: 'ei9', category: '耗材', amount: 380, date: '2026-06-30', reason: '现场更换网线及配线架耗材' },
+        { id: 'ei10', category: '交通', amount: 180, date: '2026-06-30', reason: '市内往返客户现场' },
+      ],
+    },
+    {
+      // 已核销已办结（李销售）
+      id: 'e6', customerId: 'c10', customerName: '创鑫软件有限公司', visitId: null,
+      fieldworkDate: '2026-06-20', fieldworkLocation: '西安市雁塔区', workContent: '创鑫软件DevOps平台项目验收支持',
+      notes: null, totalAmount: 980, status: 'settled', submittedById: '2', submittedByName: '李销售',
+      rejectReason: null, rejectedByStage: null,
+      statusHistory: JSON.stringify([
+        { action: 'submit', operatorId: '2', operatorName: '李销售', at: '2026-06-21 09:00' },
+        { action: 'manager_approve', operatorId: '1', operatorName: '张管理', comment: '同意', at: '2026-06-21 10:30' },
+        { action: 'finance_approve', operatorId: '4', operatorName: '赵财务', comment: '审核通过', at: '2026-06-21 15:00' },
+        { action: 'pay', operatorId: '4', operatorName: '赵财务', comment: '已打款', at: '2026-06-23 09:00' },
+        { action: 'settle', operatorId: '2', operatorName: '李销售', comment: '已确认到账', at: '2026-06-23 12:00' },
+      ]),
+      attachments: RECEIPT, createdAt: '2026-06-21 09:00', updatedAt: '2026-06-23 12:00',
+      items: [{ id: 'ei11', category: '差旅', amount: 980, date: '2026-06-20', reason: '西安往返高铁及住宿1晚' }],
+    },
+    {
+      // 已驳回（主管驳回：刘销售，缺支付凭证）
+      id: 'e7', customerId: 'c3', customerName: '远航集团有限公司', visitId: 'v2',
+      fieldworkDate: '2026-07-01', fieldworkLocation: '上海市浦东新区陆家嘴', workContent: '与钱经理沟通安防监控系统产品演示安排',
+      notes: null, totalAmount: 420, status: 'rejected', submittedById: '6', submittedByName: '刘销售',
+      rejectReason: '交通费缺少行程单及支付凭证，请补充材料后重新提交', rejectedByStage: 'manager',
+      statusHistory: JSON.stringify([
+        { action: 'submit', operatorId: '6', operatorName: '刘销售', at: '2026-07-02 09:00' },
+        { action: 'manager_reject', operatorId: '5', operatorName: '陈助理', comment: '交通费缺少行程单及支付凭证，请补充材料后重新提交', at: '2026-07-02 14:00' },
+      ]),
+      attachments: RECEIPT, createdAt: '2026-07-02 09:00', updatedAt: '2026-07-02 14:00',
+      items: [{ id: 'ei12', category: '交通', amount: 420, date: '2026-07-01', reason: '上海市内出行' }],
+    },
+    {
+      // 已驳回（财务驳回：李销售，发票抬头错误）
+      id: 'e8', customerId: 'c1', customerName: '华科信息技术有限公司', visitId: null,
+      fieldworkDate: '2026-06-25', fieldworkLocation: '深圳市南山区', workContent: '华科信息ERP项目驻场需求调研',
+      notes: null, totalAmount: 750, status: 'rejected', submittedById: '2', submittedByName: '李销售',
+      rejectReason: '住宿发票抬头为个人姓名，不符合报销制度，请换开公司抬头发票后重新提交', rejectedByStage: 'finance',
+      statusHistory: JSON.stringify([
+        { action: 'submit', operatorId: '2', operatorName: '李销售', at: '2026-06-26 09:00' },
+        { action: 'manager_approve', operatorId: '1', operatorName: '张管理', comment: '外勤属实', at: '2026-06-26 11:00' },
+        { action: 'finance_reject', operatorId: '4', operatorName: '赵财务', comment: '住宿发票抬头为个人姓名，不符合报销制度，请换开公司抬头发票后重新提交', at: '2026-06-26 16:30' },
+      ]),
+      attachments: RECEIPT, createdAt: '2026-06-26 09:00', updatedAt: '2026-06-26 16:30',
+      items: [{ id: 'ei13', category: '住宿餐', amount: 750, date: '2026-06-25', reason: '驻场调研住宿1晚' }],
+    },
   ]
   for (const e of expenses) {
-    await prisma.expense.upsert({ where: { id: e.id }, update: e, create: e })
+    const { items, ...data } = e
+    await prisma.expense.upsert({
+      where: { id: data.id },
+      update: {},
+      create: { ...data, items: { create: items } },
+    })
   }
   console.log(`  ✓ ${expenses.length} expenses`)
 
@@ -273,12 +391,12 @@ async function main() {
 
   // ── Tasks ──
   const tasks = [
-    { id: 't1', title: '提交华科信息ERP技术方案', content: '根据周总反馈完成数据迁移详细说明并发送', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, source: 'customer' },
-    { id: 't2', title: '鼎新科技合同审批', content: '鼎新科技数据平台合同待超级管理员审核', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-04', completed: false, source: 'contract' },
-    { id: 't3', title: '完成月度销售报告', content: '汇总6月份销售数据和项目跟进情况', assignedBy: '张管理', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-07', completed: false, source: 'office' },
-    { id: 't4', title: '远航集团产品演示', content: '为重点客户安排安防系统产品演示', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-02', deadline: '2026-07-08', completed: false, source: 'customer' },
-    { id: 't5', title: '报销审批', content: '李销售6月差旅费用报销申请', assignedBy: '李销售', assignedTo: '张管理', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, source: 'office' },
-    { id: 't6', title: '中科云智商务条款修改', content: '根据上次沟通调整商务条款', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-03', deadline: '2026-07-10', completed: false, source: 'customer' },
+    { id: 't1', title: '提交华科信息ERP技术方案', content: '根据周总反馈完成数据迁移详细说明并发送', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, status: 'pending', source: 'customer' },
+    { id: 't2', title: '鼎新科技合同审批', content: '鼎新科技数据平台合同待超级管理员审核', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-04', completed: false, status: 'pending', source: 'contract' },
+    { id: 't3', title: '完成月度销售报告', content: '汇总6月份销售数据和项目跟进情况', assignedBy: '张管理', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-07', completed: false, status: 'pending', source: 'office' },
+    { id: 't4', title: '远航集团产品演示', content: '为重点客户安排安防系统产品演示', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-02', deadline: '2026-07-08', completed: false, status: 'pending', source: 'customer' },
+    { id: 't5', title: '报销审批', content: '李销售6月差旅费用报销申请', assignedBy: '李销售', assignedTo: '张管理', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, status: 'pending', source: 'office' },
+    { id: 't6', title: '中科云智商务条款修改', content: '根据上次沟通调整商务条款', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-03', deadline: '2026-07-10', completed: false, status: 'pending', source: 'customer' },
   ]
   for (const t of tasks) {
     await prisma.task.upsert({ where: { id: t.id }, update: t, create: t })

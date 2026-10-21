@@ -18,6 +18,7 @@ model User {
   createdAt       String
   lastLogin       String?
   disabled        Boolean  @default(false)
+  managerId       String?  // 直属主管（报销一级审核人）
 }
 
 model Customer {
@@ -55,6 +56,7 @@ model Customer {
   contacts          Contact[]
   projects          Project[]
   contracts         Contract[]
+  expenses          Expense[]
 }
 
 model Contact {
@@ -146,17 +148,41 @@ model ArchivedFile {
   contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
+// 外勤费用报销单（SOP：关联客户必填、一单多条明细、两级审核）
 model Expense {
-  id          String  @id
-  date        String
-  category    String
-  amount      Float
-  hasInvoice  Boolean
-  project     String?
-  reason      String
-  notes       String?
-  status      String
-  submittedBy String
+  id                String  @id
+  customerId        String                 // 必填：CRM 已登记客户
+  customerName      String
+  visitId           String?                // 选填：关联外勤拜访记录（松散引用）
+  fieldworkDate     String                 // 外勤时间
+  fieldworkLocation String                 // 外勤地点
+  workContent       String                 // 工作内容
+  notes             String?                // 补充说明（超标准费用原因/用途/必要性）
+  totalAmount       Float                  // = 明细合计（后端计算）
+  status            String                 // pending_manager/pending_finance/pending_payment/paid/settled/rejected
+  submittedById     String
+  submittedByName   String
+  rejectReason      String?
+  rejectedByStage   String?                // 'manager' | 'finance'
+  statusHistory     String  @default("[]") // JSON 审批流水 [{action, operatorId, operatorName, comment?, at}]
+  attachments       String  @default("[]") // JSON [{name, data(base64), uploadedAt}] 票据凭证
+  createdAt         String
+  updatedAt         String
+
+  items             ExpenseItem[]
+  customer          Customer @relation(fields: [customerId], references: [id])
+}
+
+// 报销费用明细行
+model ExpenseItem {
+  id        String  @id
+  expenseId String
+  category  String   // 交通/差旅/住宿餐/招待/耗材/杂费
+  amount    Float
+  date      String   // 消费日期
+  reason    String   // 消费事由
+
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 }
 
 model Visit {
@@ -179,6 +205,7 @@ model Task {
   createdAt  String
   deadline   String
   completed  Boolean @default(false)
+  status     String  @default("pending") // pending/submitted/completed
   source     String
 }
 
@@ -206,6 +233,9 @@ model Notification {
   createdAt    String
   read         Boolean @default(false)
   contractId   String?
+  expenseId    String?
+  taskId       String?
+  comment      String? // 驳回原因等备注
 }
 
 model AppConfig {

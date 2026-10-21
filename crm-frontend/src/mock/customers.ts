@@ -279,24 +279,16 @@ export const mockFollowRecords = [
 ]
 
 export const mockTasks: Task[] = [
-  { id: 't1', title: '提交华科信息ERP技术方案', content: '根据周总反馈完成数据迁移详细说明并发送', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, source: 'customer' },
-  { id: 't2', title: '鼎新科技合同审批', content: '鼎新科技数据平台合同待超级管理员审核', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-04', completed: false, source: 'contract' },
-  { id: 't3', title: '完成月度销售报告', content: '汇总6月份销售数据和项目跟进情况', assignedBy: '张管理', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-07', completed: false, source: 'office' },
-  { id: 't4', title: '远航集团产品演示', content: '为重点客户安排安防系统产品演示', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-02', deadline: '2026-07-08', completed: false, source: 'customer' },
-  { id: 't5', title: '报销审批', content: '李销售6月差旅费用报销申请', assignedBy: '李销售', assignedTo: '张管理', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, source: 'office' },
-  { id: 't6', title: '中科云智商务条款修改', content: '根据上次沟通调整商务条款', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-03', deadline: '2026-07-10', completed: false, source: 'customer' },
+  { id: 't1', title: '提交华科信息ERP技术方案', content: '根据周总反馈完成数据迁移详细说明并发送', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, status: 'pending', source: 'customer' },
+  { id: 't2', title: '鼎新科技合同审批', content: '鼎新科技数据平台合同待超级管理员审核', assignedBy: '李销售', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-04', completed: false, status: 'pending', source: 'contract' },
+  { id: 't3', title: '完成月度销售报告', content: '汇总6月份销售数据和项目跟进情况', assignedBy: '张管理', assignedTo: '李销售', createdAt: '2026-07-01', deadline: '2026-07-07', completed: false, status: 'pending', source: 'office' },
+  { id: 't4', title: '远航集团产品演示', content: '为重点客户安排安防系统产品演示', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-02', deadline: '2026-07-08', completed: false, status: 'pending', source: 'customer' },
+  { id: 't5', title: '报销审批', content: '李销售6月差旅费用报销申请', assignedBy: '李销售', assignedTo: '张管理', createdAt: '2026-07-02', deadline: '2026-07-05', completed: false, status: 'pending', source: 'office' },
+  { id: 't6', title: '中科云智商务条款修改', content: '根据上次沟通调整商务条款', assignedBy: '刘销售', assignedTo: '刘销售', createdAt: '2026-07-03', deadline: '2026-07-10', completed: false, status: 'pending', source: 'customer' },
 ]
 
-export const mockExpenses: Expense[] = [
-  { id: 'e1', date: '2026-06-15', category: '差旅', amount: 2800, hasInvoice: true, project: 'ERP系统部署', reason: '拜访华科信息技术周总', notes: '高铁往返+住宿一晚', status: 'approved', submittedBy: '李销售' },
-  { id: 'e2', date: '2026-06-20', category: '招待', amount: 1500, hasInvoice: true, project: '数据平台建设', reason: '宴请鼎新科技决策团队', notes: '', status: 'paid', submittedBy: '李销售' },
-  { id: 'e3', date: '2026-06-25', category: '交通', amount: 320, hasInvoice: false, project: '智慧园区项目', reason: '市内考察园区现场', notes: '出租车', status: 'approved', submittedBy: '刘销售' },
-  { id: 'e4', date: '2026-06-28', category: '办公', amount: 850, hasInvoice: true, reason: '采购办公用品', notes: '打印纸、墨盒、文件夹', status: 'pending', submittedBy: '李销售' },
-  { id: 'e5', date: '2026-07-01', category: '差旅', amount: 4200, hasInvoice: true, project: 'AI算力平台', reason: '杭州出差拜访中科云智陈博士', notes: '机票+住宿2晚', status: 'pending', submittedBy: '刘销售' },
-  { id: 'e6', date: '2026-07-02', category: '招待', amount: 2200, hasInvoice: true, project: '安防监控系统', reason: '远航集团高管接待', notes: '', status: 'paid', submittedBy: '刘销售' },
-  { id: 'e7', date: '2026-06-18', category: '交通', amount: 180, hasInvoice: false, reason: '市内拜访客户', notes: '地铁+共享单车', status: 'paid', submittedBy: '王技术' },
-  { id: 'e8', date: '2026-06-22', category: '其他', amount: 600, hasInvoice: true, reason: '技术培训报名费', notes: '云计算认证考试', status: 'confirmed', submittedBy: '王技术' },
-]
+// 外勤费用报销依赖后端审批流（权限/审计/通知），无离线 mock 数据
+export const mockExpenses: Expense[] = []
 
 export function generateId(prefix: string): string {
   // crypto.randomUUID() requires HTTPS; use getRandomValues for HTTP compatibility

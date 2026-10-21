@@ -5,9 +5,13 @@ import { requireAuth } from '../middleware/auth.js'
 export const notificationsRouter = Router()
 notificationsRouter.use(requireAuth)
 
-notificationsRouter.get('/', async (_req: Request, res: Response) => {
+notificationsRouter.get('/', async (req: Request, res: Response) => {
   try {
-    res.json(await prisma.notification.findMany())
+    const toUserId = req.query.toUserId as string | undefined
+    res.json(await prisma.notification.findMany({
+      where: toUserId ? { toUserId } : undefined,
+      orderBy: { createdAt: 'desc' },
+    }))
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: (err as Error).message })
@@ -23,7 +27,7 @@ notificationsRouter.post('/', async (req: Request, res: Response) => {
 })
 notificationsRouter.put('/:id', async (req: Request, res: Response) => {
   try {
-    res.json(await prisma.notification.update({ where: { id: req.params.id }, data: req.body }))
+    res.json(await prisma.notification.update({ where: { id: req.params.id as string }, data: req.body }))
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: (err as Error).message })

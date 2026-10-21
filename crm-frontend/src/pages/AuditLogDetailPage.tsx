@@ -4,7 +4,7 @@ import GlassPanel from '@/components/glass/GlassPanel'
 import { useUsers } from '@/hooks/useUsers'
 import { useAuditLog } from '@/hooks/useAuditLog'
 import { AUDIT_ACTION_LABELS } from '@/types'
-import { ArrowLeft, LogIn, LogOut, Users, FileText } from 'lucide-react'
+import { ArrowLeft, LogIn, LogOut, FileText } from 'lucide-react'
 
 export default function AuditLogDetailPage() {
   const { userId } = useParams<{ userId: string }>()

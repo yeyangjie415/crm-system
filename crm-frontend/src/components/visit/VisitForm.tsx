@@ -45,8 +45,6 @@ export default function VisitForm({ open, onClose, visit }: Props) {
     }
   }, [visit, open])
 
-  const selectedCustomer = customers.find(c => c.id === customerId)
-
   const handleCustomerChange = (id: string) => {
     setCustomerId(id)
     const c = customers.find(c => c.id === id)

@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
-import Marquee from './Marquee'
 
 export default function AppLayout() {
   return (
@@ -12,7 +11,6 @@ export default function AppLayout() {
         <main className="flex-1 overflow-y-auto p-5 relative">
           <Outlet />
         </main>
-        <Marquee />
       </div>
     </div>
   )

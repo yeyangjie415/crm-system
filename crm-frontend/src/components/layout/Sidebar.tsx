@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { path: '/customers', icon: Users, label: '客户管理' },
   { path: '/deals', icon: ClipboardList, label: '项目成交' },
   { path: '/commissions', icon: Banknote, label: '提成发放' },
-  { path: '/expenses', icon: Receipt, label: '报销发放' },
+  { path: '/expenses', icon: Receipt, label: '费用报销' },
   { path: '/visits', icon: MapPin, label: '外勤管理' },
   { path: '/office', icon: Briefcase, label: '协同办公' },
   { path: '/reports', icon: BarChart3, label: '报表中心' },

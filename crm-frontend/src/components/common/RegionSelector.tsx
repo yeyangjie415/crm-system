@@ -12,7 +12,7 @@ interface Props {
 
 const MUNICIPALITY_CODES = ['110000', '120000', '310000', '500000']
 
-export default function RegionSelector({ value, onChange, required = false, disabled = false }: Props) {
+export default function RegionSelector({ value, onChange, disabled = false }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedProvince, setSelectedProvince] = useState<RegionData | null>(null)
   const [selectedCity, setSelectedCity] = useState<RegionData | null>(null)
